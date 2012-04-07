@@ -17,7 +17,7 @@ Mov = [];
 
 for test_num = 1:num_tests
     %    clc;
-    %try 
+    try 
         t = cputime;
         fprintf('==================\n\tTEST %d\n==================\n\n', test_num);
         test = test_sequence(test_num);
@@ -45,8 +45,8 @@ for test_num = 1:num_tests
             ghdfhfdhd
         end
         
-     %catch
-     %    probcond = [probcond, test_num];
-     %    fprintf('error occured on trial %d\n', test_num);
-     %end
+     catch
+         probcond = [probcond, test_num];
+         fprintf('error occured on trial %d\n', test_num);
+     end
 end
