@@ -1,7 +1,5 @@
-ind = find(level_time_stats(:,3) == 0)
+ind = find(level_time_stats(:,3) == 0);
 ind = [0; ind];
-
-stats = cell(1);
 
 for i = 1:length(ind)
     
