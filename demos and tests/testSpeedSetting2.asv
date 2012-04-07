@@ -1,0 +1,127 @@
+%Divya Gunasekaran
+%March 2, 2011
+
+%Getting degrees per second for different joints at different speed
+%settings
+%Version 2-automated
+
+function [] = testSpeedSetting2(sock, servo, endAngle, speed, numTrials)
+
+% %Robot's IP address and port number
+% ip = '192.168.1.117';
+% port = 54000;
+% 
+% %Names of robot's servos
+% %servoNames = {'TorsoYaw', 'TorsoPitchOne', 'TorsoPitchTwo', 'RightShoulderRotator', 'RightShoulderPitch',...  
+%     %'RightElbow', 'RightWrist', 'LeftShoulderRotator', 'LeftShoulderPitch', 'LeftElbow', 'LeftWrist'};
+% 
+% 
+% %Create TCP connection to robot
+% sock = connectRobot(ip, port);
+% if(sock < 0)
+%     disp('Could not connect to robot.');
+%     pnet('closeall');
+%     return;
+% else
+%     disp('Connected to robot');
+% end
+
+
+%% Save results
+
+timings = struct;
+save('savedSpeedTimings', 'timings'); 
+
+
+%% 
+
+robotZero = 512;
+[rad, deg, currPos] = getPos(sock, servo, robotZero);
+
+startAngle = deg; %startAngle is in degrees
+
+%start and endAngle are in degrees
+endPosition = round(endAngle*1024/300 + robotZero);
+startPosition = currPos;
+
+%Margin of error when retrieving position from robot
+endPosLower = endPosition - 2;
+endPosUpper = endPosition + 2;
+
+startPosLower = startPosition - 2;
+startPosUpper = startPosition + 2;
+
+timeVector = zeros(1, numTrials);
+degVector = zeros(1,numTrials);
+
+index = strmatch(servo, servoNames);
+speedIndex = speed / 10;
+timings.servo{index}.trials(speedIndex,1) = speed;
+timings.servo{index}.speed(speedIndex,1) = speed;
+
+
+
+%% Execute trials
+
+for n=1:numTrials
+    pause; %time to reset
+    
+    [rad, degStart, currPos] = getPos(sock, servo, robotZero);
+    if(mod(n,2)==0)
+        moveServo(sock, servo, speed, 512); %move servo back to start pos
+        lowerLimit = startPosLower;
+        upperLimit = startPosUpper;
+    else
+        moveServo(sock, servo, speed, endPosition); %move servo to end pos
+        lowerLimit = endPosLower;
+        upperLimit = endPosUpper;
+    end
+    
+    tStart = tic; %start timer
+
+%     i=1;
+    while(currPos < lowerLimit || currPos > upperLimit)  
+    %     tStart = tic; %start timer
+        pause(0.5);
+        [rad, deg, currPos] = getPos(sock, servo, robotZero);
+    %     tElapsed = toc(tStart); %stop timer
+    %     degVector(i) = deg;
+    %     timeVector(i) = tElapsed;
+    %     i = i+1;
+    end
+
+    [rad, degEnd, currPos] = getPos(sock, servo, robotZero);
+    tElapsed = toc(tStart); %stop timer
+    deltaDeg = abs(degStart - degEnd);
+    timings.servo{index}.trials(speedIndex,n) = deltaDeg / tElapsed;
+%     degVector(n) = abs(degStart - degEnd);
+%     timeVector(n) = tElapsed;
+end
+
+    speedValues = timings.servo{index}.trials(speedIndex,2:end);
+    timings.servo{index}.speed(speedIndex,2) = mean(speedValues);
+
+% %truncate end of vector
+% degVector(i:end) = [];
+% timeVector(i:end) = [];
+
+% %vector of average speeds in deg/sec
+% trials = length(timeVector);
+% speedVector = zeros(1,trials);
+% if(trials > 0)
+%     speedVector(1) = abs(startAngle - degVector(1)) / timeVector(1);
+%     for j=2:trials
+%         speedVector(j) = abs(degVector(j) - degVector(j-1)) / (timeVector(j));
+%     end
+% end
+
+% trials = length(timeVector);
+% speedVector = zeros(1,trials);
+% for j=1:trials
+%     speedVector(j) = abs(degVector(j)) / (timeVector(j));
+% end
+
+
+% %Close connection and exit
+% pnet('closeall');
+% disp('Connection closed');

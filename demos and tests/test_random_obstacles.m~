@@ -1,0 +1,16 @@
+% Richard Lange
+% October 13, 2011
+%
+% test random obstacle generation
+
+clear all;
+
+initMBPP;
+%B = fillSelfObstacles(B);
+
+while(1)
+    close all;
+    B2 = (B, 4, 1.5, );
+    plot_obstacles(B2);
+    pause;
+end

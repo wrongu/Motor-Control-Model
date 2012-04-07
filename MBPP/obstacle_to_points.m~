@@ -1,0 +1,15 @@
+% points = obstacle_to_points(obstacle, spacing)
+%
+% given obstacle struct, return points
+
+function points = obstacle_to_points(obstacle, spacing)
+    switch(obstacle.type)
+        case 'box'
+            points = rectangle_3D(obstacle.dimension
+        case 'ring'
+        case 'cylinder'
+        case 'line'
+        otherwise
+            error(['obstacle_to_points: given obstacle type is %s.' ...
+                '\nmust be box, ring, cylinder, or line'], obstacle.type);
+end

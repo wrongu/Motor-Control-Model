@@ -1,0 +1,99 @@
+%Divya Gunasekaran
+%Jan 26, 2010
+%Robot functions
+
+%Function to move robot servos
+
+%Inputs:
+    %sock = socket id of connection to the robot
+    %servo = name of the servo to command
+        %servo='Left' moves all of the robot's left servos
+        %servo='Right' moves all of the robot's right servos
+        %servo='All' moves all of the robot's servos
+    %speed = speed at which the robot's servo will move
+    %pos = position to which the servo will be moved
+        %pos must be within valid range
+        
+%Outputs:
+    %iResult = Greater than 0 if commands sent successfully; -1 otherwise
+    
+%Note: Currently, the 'All' keyword does not include torso servos
+
+
+function[iResult] = moveServo(sock, servo, speed, pos)
+
+%%
+%VARIABLES AND STRUCTS
+
+%Names of arm and torso servos
+servoNames = {'RightShoulderRotator', 'RightShoulderPitch',...  
+    'RightElbow', 'RightWrist', 'RightGripper', 'LeftShoulderRotator',...
+    'LeftShoulderPitch', 'LeftElbow', 'LeftWrist', 'LeftGripper', ...
+    'TorsoYaw', 'HeadPitch', 'HeadYaw', 'TorsoPitchOne', 'TorsoPitchTwo'};
+
+%Position limits for arm and torso servos -- [lower bound, upper bound]
+servoLimits = {[0,1022], [170,829], [151,885], [0,1022], [290,772], [0,1022], ... 
+     [230,870], [151,885], [0,1022], [373,672], [0,1022], [352,708], ...
+     [0,1022], [500,525], [500,525]};
+
+%"Hash table" mapping servo names to their position limits
+servoTable = containers.Map(servoNames, servoLimits);
+    
+
+%%
+%MOVE COMMAND
+
+%If given servo is a key in the above associative array
+%Move the given servo
+if(isKey(servoTable, servo))
+    bounds = servoLimits(servo);
+    iResult = moveServoHelper(sock, servo, bounds, speed, pos);
+    
+%If given servo is 'Left' keyword
+%Move all of the robot's left servos   
+elseif(strcmp(servo, 'Left'))
+    leftIndices = strmatch(servo, servoNames);
+    for i=1:length(leftIndices)
+        nameIndex = leftIndices(i); %index for servoNames array
+        leftServo = servoNames{nameIndex}; %name of servo on left side
+        bounds = servoTable(leftServo); %bounds for the servo
+        iResult = moveServoHelper(sock, leftServo, bounds, speed, pos);
+        if(iResult == -1)
+            return;
+        end
+    end
+    
+%If given servo is 'Right' keyword
+%Move all of the robot's right servos       
+elseif(strcmp(servo, 'Right'))
+    rightIndices = strmatch(servo, servoNames);
+    for i=1:length(rightIndices)
+        nameIndex = rightIndices(i); %index for servoNames array
+        rightServo = servoNames{nameIndex}; %name of servo on right side
+        bounds = servoTable(rightServo); %bounds for the servo
+        iResult = moveServoHelper(sock, rightServo, bounds, speed, pos);
+        if(iResult == -1)
+            return;
+        end
+    end
+    
+%If given servo is 'All' keyword
+%Move all of the robot's servos   
+elseif(strcmp(servo, 'All'))
+    for i=1:(length(servoNames)-2) %don't include torso servos for now
+        servoName = servoNames{i}; %name of servo 
+        bounds = servoTable(servoName); %bounds for the servo
+        iResult = moveServoHelper(sock, servoName, bounds, speed, pos);
+        if(iResult == -1)
+            break;
+        end
+    end
+    
+%Else invalid input for servo        
+else
+    disp('Error: Invalid servo');
+    iResult=-1;
+end
+
+end
+

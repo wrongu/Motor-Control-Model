@@ -1,0 +1,65 @@
+/**
+ * @brief a queue implementation similar to std::priority_queue which also 
+ * allows update/removeal of its elements.
+ */ 
+template <class T> 
+class MinHeap{
+protected:
+    vector<T>  c;         /// underlying data structure
+    //vector<T&> cpointers; /// vector of pointers to the elements 
+
+public:
+    /// check emptyness
+    bool empty() const{ 
+        return c.empty(); 
+    }
+    /// Returns the number of elements
+    int size() const{ 
+        return c.size(); 
+    }
+    /// pop element from top of queue
+    const T& top() const throw(int){
+        if( c.size() == 0 )
+            throw 1;
+        return c.front();
+    }
+    /// push a new element in queue
+    void push(const T& x){
+        c.push_back(x);
+        std::push_heap( c.begin(), c.end() );
+    }
+    /// @brief removes first element
+    void pop() throw(int){
+        if( c.size() == 0 )
+            throw 1;
+        // pop head
+        std::pop_heap(c.begin(), c.end());
+        c.pop_back();
+    }
+    //// Update operations
+    void decreasekey( T& element){
+        
+    }
+};
+
+CYCLIC IMPLEMENTATION OF 
+/* perculate down */
+while(l < heap->size()) {
+    if(r >= heap->size()) {
+        if((*heap)[pos] < (*heap)[l]) {
+            swap(pos, l);
+        }
+        break;
+    }
+    
+    if(((*heap)[pos] > (*heap)[l]) && ((*heap)[pos] > (*heap)[r])) {
+        break;
+    }
+    
+    int swapPos = (((*heap)[l] > (*heap)[r]) ? l : r);
+    swap(pos, swapPos);
+    pos = swapPos;
+    
+    l = left(pos);
+    r = right(pos);
+}

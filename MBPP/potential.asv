@@ -1,0 +1,13 @@
+%%Divya Gunasekaran
+%%October 14, 2010
+
+%Function to compute potential energy
+
+function [p] = potential(Sx, Sy, cx, cy, w, h)
+%Potential energy is zero if point is outside of the box
+if abs(Sx - cx) >= w/2 || abs(Sy - cy) >= h/2
+    p=0;
+%    
+else
+    p = (w/2 - abs(Sx - cx))^2 + (h/2 - abs(Sy - cy))^2;
+end;

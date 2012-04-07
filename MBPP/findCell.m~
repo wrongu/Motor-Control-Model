@@ -1,0 +1,38 @@
+% Divya Gunasekaran
+% October 19, 2010
+
+% Function to find the indices for the appropriate cell in a cell array 
+% given (x,y,z) coordinates.
+
+% Inputs*:
+% x = x-coordinate in space
+% y = y-coordinate in space
+% z = z-coordinate in space
+% w = width of the cell
+% l = length of cell
+% h = height of the cell
+% n = dimensions of n*n*n cell array
+% *dimensions in inches
+
+function [i, j, k, absIndex] = findCell(position, n, w, l, h)
+
+% x <--> i
+% y <--> j
+% z <--> k
+
+x=position(1);
+y=position(2);
+z=position(3);
+
+% i = floor((x + n)/w + 1);
+% j = floor((y + n)/l + 1);
+% k = floor((z + n)/h + 1);
+
+% see initMBPP for explanation of this formula
+% using round() instead of floor() makes it 
+i = round(x/w + (n+1)/2);
+j = round(y/l + (n+1)/2);
+k = round(z/h + (n+1)/2);
+
+% to flatten n*n*n array into 1*n^3 array, this is index:
+absIndex = (k-1)*n^2 + (i-1)*n + j;

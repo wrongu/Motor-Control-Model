@@ -1,0 +1,97 @@
+% test_sequence = generate_test_sequence(B, num_trials, task, side)
+%
+% returns a (num_trials x 1) struct test_sequence with fields
+%   start_posture   1x7 joint angles (the usual)
+%   goal_point      1x3 goal point [x y z]
+%   obstacles        1xM obstacle struct, where M is # of obstacles:
+%                       anywhere between 0 and 3
+%
+% written by Richard Lange 
+% December 8, 2011
+
+function test_sequence = generate_test_sequence(B_orig, num_trials, task, side)
+    test_sequence = struct('start_posture', zeros(1,7), 'goal_point', ...
+        [0 0 0], 'obstacles', obstacle_new(1,1,1));
+    
+    % need B dimensions for findCell
+    n = size(B_orig, 1);
+    w = B_orig(1).width;
+    l = B_orig(1).length;
+    h = B_orig(1).height;
+    
+    % get goal space
+    [goal_center goal_span] = get_goal_space_by_task(task, side);
+    
+    for i=1:num_trials
+        fprintf('Generating test %d\n', i);
+        % reset B
+        B = B_orig;
+        
+        % ########################
+        % ### RANDOM OBSTACLES ###
+        % ########################
+        
+        % random number of obstacles
+        M = floor(rand*4);
+        for j=1:M
+            obstacle = obstacle_new(4, 1.5, 8);
+            test_sequence(i,1).obstacles(j,1) = obstacle;
+            B = points_to_obstacles(B, obstacle_to_points(obstacle, w/2));
+        end
+        % pick start posture at random. get cells without obstacles
+        no_obstacles = find(isnan(getObstacles(B)));
+        
+        % ############################
+        % ### RANDOM START POSTURE ###
+        % ############################
+        
+        % keep picking a posture from known postures until a free one is
+        % found
+        posture_in_obstacle = true;
+        count = 1;
+        while(posture_in_obstacle)
+%             fprintf('pick start posture, loop %d\n', count);
+            count = count+1;
+            % pick random cell that is free
+            rand_free_ind = floor(rand*length(no_obstacles))+1;
+            rand_B_ind = no_obstacles(rand_free_ind);
+            % get all postures in that cell
+            if(strcmp(side,'right'))
+                avail_postures = B(rand_B_ind).r_postures;
+            else
+                avail_postures = B(rand_B_ind).l_postures;
+            end
+            % pick random posture from that cell
+            num_postures = size(avail_postures, 1);
+%             fprintf('num postures in cell %d is %d\n\n', rand_B_ind, num_postures);
+            if(num_postures > 0)
+                posture = avail_postures(floor(rand*num_postures)+1,:);
+                
+                % check if posture is free
+                posture_in_obstacle = ~CheckPostureCollisions(B, posture, side);
+            else
+                % no posture here - remove cell from 'avail'
+                
+            end
+        end
+        % save posture to struct
+        test_sequence(i,1).start_posture = posture;
+        
+        % ###################
+        % ### RANDOM GOAL ###
+        % ###################
+        
+        % generate goal point in spannable space that is not in an obstacle
+        goal_in_obstacle = true;
+        while(goal_in_obstacle)
+            goal_pt = goal_center + ...
+                (rand*2-1)*goal_span(1,:) + ...
+                (rand*2-1)*goal_span(2,:) + ...
+                (rand*2-1)*goal_span(3,:);
+            [~,~,~,ind] = findCell(goal_pt, n,w,l,h);
+            goal_in_obstacle = (B(ind).obstacle ~= 0);
+        end
+        % save goal to struct
+        test_sequence(i,1).goal_point = goal_pt;
+    end
+end

@@ -1,0 +1,182 @@
+%Divya Gunasekaran
+%Feb. 16, 2011
+
+% Select the posture for which all the joints move simultaneously by roughly 
+%the same amount
+
+function posture = selectPosture(sock, A, position, side)
+%(sock, A, i, j ,k, side)
+%
+
+
+%Names of arm and torso servos
+servoNames = {'TorsoYaw', 'TorsoPitchOne', 'TorsoPitchTwo', 'RightShoulderRotator', 'RightShoulderPitch',...  
+    'RightElbow', 'RightWrist', 'LeftShoulderRotator',...
+    'LeftShoulderPitch', 'LeftElbow', 'LeftWrist'};
+
+
+%Weights for costs (must sum to 1)
+weight_d = (1/3); %weight for movement of joints (std. dev)
+weight_s = (1/3); %weight of spatial error cost
+weight_l = (1/3); %weight of limb movements
+
+%Lengths of robot arm segments
+rotatorToShoulder = 0.5;
+shoulderToElbow = 4.125;
+elbowToWrist = 2; 
+wristToGripper = 6.5;
+
+shoulderRotator = rotatorToShoulder + shoulderToElbow + elbowToWrist + wristToGripper;
+torsoYaw = shoulderRotator*2;
+shoulderPitch = shoulderRotator - rotatorToShoulder;
+elbow = shoulderPitch - shoulderToElbow;
+wrist = elbow - elbowToWrist;
+
+armLengths = {torsoYaw, 0, 0, shoulderRotator, shoulderPitch, elbow, wrist};
+
+lengthSum = 0;
+for i=1:length(armLengths)
+    lengthSum = lengthSum + armLengths{i};
+end
+
+
+zero = 512; %robot zero for servo
+numServos = length(servoNames);
+allPostures = zeros(1,numServos);
+%Get robot's current posture in radians
+for p=1:numServos
+    servo = servoNames{p};
+    allPostures(1,p) = getAngle(sock, servo, zero);
+end
+
+%Find cell to which given position belongs
+[n n n] = size(A);
+w = A{1,1,1}.width;
+l = A{1,1,1}.length;
+h = A{1,1,1}.height;
+[i, j, k] = findCell(position, n, w, l, h)
+
+%Get all possible postures appropriate cell for the given side (right or
+%left)
+if(strcmp(side, 'left'))
+    Postures = A{i,j,k}.l_postures; %matrix of postures of left side
+    currPosture = [allPostures(1) allPostures(2) allPostures(3) allPostures(8) allPostures(9) allPostures(10) allPostures(11)];
+elseif (strcmp(side, 'right'))
+    Postures = A{i,j,k}.r_postures; %matrix of postures of right side
+    currPosture = [allPostures(1) allPostures(2) allPostures(3) allPostures(4) allPostures(5) allPostures(6) allPostures(7)];
+else
+    disp('Error: please specify left or right side');
+    posture = -1;
+    return;
+end
+
+[numPostures numAngles] = size(Postures); %Get dimensions of matrix of postures
+minChange = 1000000; %initially set minChange to "infinity"
+minPostureIndex = 1;
+
+
+%If cell has registered postures
+%Calculate the standard deviation across joint angles of robot's current 
+%position and each registered posture and choose the registered posture
+%with the smallest standard deviation
+if(numPostures > 1)
+    %For each set of postures (skip first because it's all zeros)
+    for i=2:numPostures
+%         %Convert the positions to radians
+%         Postures_Rad = zeros(1,7); %store joint angles in units of radians
+%         for m=1:7
+%             degrees = (Postures(i,m) - zero)*300/1024; %degrees
+%             Postures_Rad(1,m) = degrees*pi/180; %radians
+%         end
+        
+        %Calculate the difference between each pair of joint angles
+%       diffVector = zeros(1, 7); %store difference between each pair of angles
+        spatialError = 0;
+        sumDiff = 0;
+        limbIndicator = 0;
+        disp(i);
+       
+        %Add weighting for distance of joint movement and 
+        %length of limb segments
+        for j=1:numAngles
+            diff = abs(Postures(i,j)-currPosture(1,j));
+            limbIndicator = limbIndicator + diff*(armLengths{j}/lengthSum);
+%             diff = abs(Postures(i,j)-currPosture(1,j))*(armLengths{j}/lengthSum);
+            
+            sumDiff = sumDiff + diff^2;
+%             diffVector(1, j) = diff^2;
+%             diffVector(2, j) = diff*(armLengths{i}/lengthSum)           
+        end
+        
+        %Calculate spatial error cost
+        %For right gripper
+        if(strcmp(side, 'right'))
+            potentialPosture = [Postures(i,:) 0 0 0 0];
+            [rightPoint leftPoint intermedJoints] = ForwardKinematics_V5(potentialPosture);
+            %Euclidean distance between pos. of right gripper and target
+            spatialError = sqrt((rightPoint(1) - position(1))^2 + (rightPoint(2) - position(2))^2 + (rightPoint(3)-position(3))^2);
+        %For left gripper
+        elseif(strcmp(side, 'left'))
+            potentialPosture = [Postures(i,1) Postures(i,2) Postures(i,3) 0 0 0 0 Postures(i,4) Postures(i,5) Postures(i,6) Postures(i,7)];
+            [rightPoint leftPoint intermedJoints] = ForwardKinematics_V5(potentialPosture);
+            spatialError = sqrt((leftPoint(1) - position(1))^2 + (leftPoint(2) - position(2))^2 + (leftPoint(3)-position(3))^2);
+        end
+%         sumDiff = 0;  
+%         for n=1:length(diffVector);
+%             sumDiff = diffVector(1,n) + sumDiff;
+%         end
+        stdDev = sqrt(sumDiff / numAngles);
+        postureRating = stdDev*weight_d + limbIndicator*weight_l + spatialError*weight_s
+        if(postureRating <= minChange)
+            minChange = postureRating;
+            minPostureIndex = i;
+        end
+    end
+else
+    disp('Error: No registered postures for this position.');
+end
+
+posture = Postures(minPostureIndex, :);
+
+%%
+
+%Convert selected posture (currently in radians) to set of servo positions
+targetPosition = zeros(1, length(posture));
+zero = 512;
+
+speed = 15;
+
+%Convert angle in radians to servo position
+for j=1:length(posture)
+    deg = posture(j)*180/pi;
+    targetPosition(1,j) = floor(deg*1024/300 + zero);
+end
+
+
+%Manually set TorsoPitchOne and TorsoPitchTwo to avoid complications
+targetPosition(1,2) = 512;
+targetPosition(1,3) = 512;
+
+%% Move robot servos to selected posture
+
+%Move all servos
+% for i=1:length(posture)
+%     if(strcmp(side, 'right'))
+%         servo = servoNames{i};
+%     elseif(strcmp(side, 'left'))
+%         if(i>=4)
+%             j=i+4;
+%             servo = servoNames{j};
+%         else
+%             servo = servoNames{i};
+%         end
+%     else
+%         disp('Error');
+%         return;
+%     end
+%     moveServo(sock, servo, speed, targetPosition(1,i));
+%     pause(0.25);
+% end
+
+
+

@@ -1,0 +1,34 @@
+%Divya Gunasekaran
+%Jan 31, 2010
+%Robot functions
+
+%Function to get angle in radians for the given servo
+
+function [rad, position] = getAngle(sock, servo, zero)
+
+%Query robot for position of servo
+str = [servo, '.position'];
+resp = sendStr(sock, str);
+
+n = length(resp); %Length of string returned by robot
+index = strfind(resp, ']') + 2; %starting index of position
+
+posStr = resp(index:n); %get position as a string
+position = str2num(posStr); %convert string to number
+
+%Convert position to angle
+deg = (position-zero)*300/1024;  %degrees
+rad = deg*pi/180;   %radians (better for trig calculations)
+
+end
+% 
+% def getAngle(self,motorName, zero):
+%         value = self.getValue(motorName)
+%         deg = (value-zero)*300/1024#degrees
+%         rad = deg*math.pi/180#radians (better for trig calculations)
+%         return rad
+%         
+%         tuesday 12-1, 2-4
+%         wed 11-5
+%         thurs 2
+%         

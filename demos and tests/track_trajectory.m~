@@ -1,0 +1,69 @@
+% Richard Lange
+% August 10, 2011
+% 
+% function to track brainbot arm trajectories through time
+% useful for motion capture
+%
+% INPUTS:
+%   total_time = time, in seconds, to record
+%   t_interval = time interval between measurements. if none given, default
+%    is 0.1s (NOTE: this is the amount of pause time in the loop. does not
+%    account for inherent delay in measurements
+% 
+% OUTPUTS: all [x y z] in space are across the rows. N positions recorded.
+% there are M joints for each side
+%   r_gripper = Nx3 matrix of positions of right gripper
+%   l_gripper = likewise for left
+%   curAngles = Nx7 = current joint angles (in radians) through time
+%   skip_servos = servos to ignore (use if overheating, for example).
+
+function [r_gripper, l_gripper, angles, delays] = track_trajectory(total_time, t_interval, sock, skip_servos)
+
+% if(~exist('sock', 'var'))
+%     robo_reset;
+% end
+
+if(nargin < 4)
+    skip_servos = {};
+end
+
+min_t_interval = 0.2;
+if(t_interval < min_t_interval)
+    t_interval = min_t_interval;
+    fprintf('setting t_interval to %f. any faster causes connection problems.\n', t_interval);
+end
+
+N = total_time / t_interval;
+tstart = tic;
+
+M = 7;
+
+% r_gripper = zeros(N, 3);
+% l_gripper = zeros(N, 3);
+% r_joints = zeros(M, N, 3);
+% l_joints = zeros(M, N, 3);
+
+i = 1; % keep track of index
+
+[~,~,old_angles] = ticks_to_radians
+delays = zeros(1, N);
+
+while(toc(tstart) < total_time && i <= N)
+    tstart = tic();
+    cur_angles= GetCurrPosture(sock, old_angles, skip_servos);
+    delays(i) = toc(tstart);
+    [cur_rg, cur_lg, ~, ~] = ForwardKinematics_V5(cur_angles);
+    
+    r_gripper(i, :) = cur_rg;
+    l_gripper(i, :) = cur_lg;
+    angles(i, :) = cur_angles;
+    
+    i = i+1;
+    old_angles = cur_angles;
+    
+    pause(t_interval);
+end
+
+robo_disconnect;
+
+end

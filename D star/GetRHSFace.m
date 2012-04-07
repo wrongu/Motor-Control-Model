@@ -1,0 +1,52 @@
+function [min,xyzMin] = GetRHSFace(faceIndex,side,fromPt,goal,start,B,C)
+
+global FacesArray;
+
+%Get dimensions of cells
+w = B(1).width;
+l = B(1).length;
+h = B(1).height;
+
+%Get corners of the given face
+[c0 c1 c2 c3] = GetCorners(faceIndex,side,goal,B);
+g0 = c0.g;
+g1 = c1.g;
+g2 = c2.g;
+g3 = c3.g;
+
+t0 = MinBoundary(c1,c0,fromPt);
+
+t1 = MinBoundary(c2,c3,fromPt);
+
+u0 = MinBoundary(c1,c2,fromPt);
+
+u1 = MinBoundary(c0,c3,fromPt);
+
+[tInt,uInt] = MinIntFace(t0,t1,u0,u1);
+
+faceCoords = [t0,0; t1,w; 0,u0; w,u1; tInt,uInt]
+
+[numPoints,dim] = size(faceCoords);
+
+inf = 1000000; %Const representing infinity
+min = inf;
+xyzMin = [];
+
+startPt=FacesArray{start}.point;
+
+for i=1:numPoints
+    t = faceCoords(i,1);
+    u = faceCoords(i,2);
+    xyz = GetXYZ(c1,t,u,side)
+    %rhs = C*euclidDist(xyz,fromPt) + (g1 + (g0-g1)*t)*(w-u) + (g2 + (g3-g2)*t)*u;
+    rhs = sqrt(w^2+t^2+u^2) + euclidDist(xyz,startPt)
+    if(rhs <= min)
+        min = rhs;
+        xyzMin = xyz;
+    end
+end
+
+
+
+
+    

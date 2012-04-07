@@ -1,0 +1,52 @@
+%Divya Gunasekaran
+%Jan 26, 2010
+%Robot functions
+
+%Wake-up program writen by Dan Muldrew
+%Modified by Divya Gunasekaran
+
+clear all
+
+%Robot's IP address and port number
+ip = '192.168.1.117';
+port = 54000;
+
+%Create TCP connection to robot
+sock = connectRobot(ip, port);
+if(sock < 0)
+    disp('Could not connect to robot.');
+    return;
+end
+
+speed = 50;
+position = 512;
+
+moveServo(
+
+%%
+Servos = {'TorsoYaw'
+,'TorsoPitchOne','TorsoPitchTwo','RightShoulderRotator','RightShoulderPitch','RightElbow',...
+    'RightWrist','LeftShoulderRotator','LeftShoulderPitch','LeftElbow','LeftWrist','HeadPitch','HeadYaw',...
+    'RightGripper','LeftGripper'}
+
+speed = 50
+position = 512
+
+for i = 1:length(Servos),
+
+    pnet(fid,'write',[Servos{i}, '.speed=', num2str(speed), sprintf('\n\r')])
+    resp = [];
+    while ~isempty(resp);
+        resp = pnet(fid,'readline');
+    end
+    disp(pnet(fid,'readline'))
+
+    pnet(fid,'write',[Servos{i}, '.position=', num2str(position),
+sprintf('\n\r')])
+    resp = [];
+    while ~isempty(resp);
+        resp = pnet(fid,'readline');
+    end
+    disp(pnet(fid,'readline'))
+
+end

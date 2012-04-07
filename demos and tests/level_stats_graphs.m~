@@ -1,0 +1,28 @@
+% make graphs for level_time_stats
+
+close all;
+
+assert(exist('num_tests', 'var'));
+assert(exist('level_time_stats', 'var'));
+assert(exist('level_stats_index', 'var'));
+
+highest_level = zeros(num_tests, 1);
+level1stats = struct('');
+
+trial_num = 1;
+for i=1:level_stats_index
+    level_id = level_time_stats(i,1);
+    switch level_id
+        case 0
+            trial_num = trial_num + 1;
+            continue;
+        case 1
+            
+        case 2
+        case 3
+        case 4
+        otherwise
+            fprintf('trial %d :: index %d\n\tunknown level id %d\n', ...
+                trial_num, i, level_id);
+    end
+end

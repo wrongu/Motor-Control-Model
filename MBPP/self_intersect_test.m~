@@ -1,0 +1,27 @@
+% testing file for the self-intersection obstacle code
+
+tstart = tic();
+    initMBPP;
+tend = toc;
+fprintf('initMBPP: %fs\n',(tend-tstart));
+
+tstart = tic;
+    B = fillSelfObstacles(B);
+tend = toc;
+fprintf('fillSelfOBstacles: %fs\n',(tend-tstart));
+
+obs = getObstacles(B);
+
+xs = linspace(-(n*w)/2, (n*w)/2, n);
+ys = linspace(-(n*l)/2, (n*l)/2, n);
+zs = linspace(-(n*h)/2, (n*h)/2, n);
+
+ obs(1, 1, :) = .1;
+ obs(1, :, 1) = .1;
+ obs(:, 1, 1) = .1;
+
+tstart = tic;
+    PATCH_3Darray(obs, xs, ys, zs, 'col');
+tend = toc;
+fprintf('3D plot: %fs\n',(tend-tstart));
+

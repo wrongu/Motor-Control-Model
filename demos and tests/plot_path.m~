@@ -1,0 +1,16 @@
+% Richard Lange
+% 3 August 2011
+
+% given cell space B and path `path`, plot the path in 3D space along with
+% the obstacles in B
+
+function fig = plot_path(B, path)
+    fig = plot_obstacles(B);
+    figure(fig);
+    hold all;
+    xs = path(1,:);
+    ys = path(2,:);
+    zs = path(3,:);
+    plot3(xs,ys,zs
+    hold off;
+end

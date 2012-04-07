@@ -1,0 +1,10 @@
+function w = CalculateWeight(currentposture,M)
+
+len = length(M);
+
+d = [M(i).currentposture]-currentposture(ones(1,len),:);
+
+
+w = d'*[M.normjointdiff];
+
+end

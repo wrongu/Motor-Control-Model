@@ -1,0 +1,15 @@
+%%Divya Gunasekaran
+%%October 15, 2010
+
+%Function to check whether to continue with posture registration. We expect
+%the growth or percent increase to be above a certain threshold sigma. If
+%not, we consider the cell saturated
+
+%Inputs:
+%prevRate = Previous registration rate
+%numNewPosturesPerCycle = Current registration rate
+%sigma = threshold for 
+
+
+function [continueReg] = checkRegRate(prevRate, numNewPosturesPerCycle, sigma)
+if abs(prevRate-numNewPosturesPerCycle)/prevRate < sigma

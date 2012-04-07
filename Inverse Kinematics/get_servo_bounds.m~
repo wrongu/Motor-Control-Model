@@ -1,0 +1,17 @@
+function bounds = get_servo_bounds()
+    % 1: TorsoYaw
+    % 2: TorsoPitchOne
+    % 3: TorsoPitchTwo*
+    % 4: RightShoulderRotator*
+    % 5: RightShoulderPitch*
+    % 6: RightElbow*
+    % 7: RightWrist*
+    % 8: LeftShoulderRotator
+    % 9: LeftShoulderPitch
+    % 10: LeftElbow
+    % 11: LeftWrist
+    %
+    % * indicates servos whose
+    bounds = {[0,1022], [500,525], [500,525], [0,1022], [170,829], ...
+        [151,512], [0,1022], [0,1022], [230, 870], [512,885], [0,1022]};
+end

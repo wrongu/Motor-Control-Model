@@ -1,0 +1,22 @@
+%Divya Gunasekaran
+%Jan 26, 2010
+%Robot functions
+
+%Function to send string over tcp connection to robot
+%and display data that the server returns
+
+function[iResult] = sendStr(sock, str)
+
+%Send string over socket
+pnet(sock, 'write', sprintf('%s\n\r', str));
+
+%Wait un
+resp = [];
+while ~isempty(resp);
+    resp = pnet(fid,'readline');
+end
+disp(pnet(fid,'readline'))
+
+end
+
+

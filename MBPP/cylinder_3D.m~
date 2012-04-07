@@ -1,0 +1,36 @@
+% cylinder_3D: generate points on the surface of a 3D cylinder
+%
+% Richard Lange
+% October 13, 2011
+%
+% Generate 3D points in a cylinder on the given axis at the given point,
+% where the distance between adjacent points is less than the given
+% resolution. The cylinder will span the length of axis perfectly
+
+function [x y z] = cylinder_3D(axis, radius, start_point, resolution)
+    vert_divisions = norm(axis)/resolution;
+    circumference = 2*pi*radius;
+    angle_divisions = circumference/resolution;
+    
+    % use built-in function to get unit cylinder with proper number of
+    % divisions
+    [x2 y2 z2] = cylinder(ones(vert_divisions,1), angle_divisions);
+    
+    % flatten point matrices to vectors
+    x = reshape(x2, 1, numel(x2));
+    y = reshape(y2, 1, numel(y2));
+    z = reshape(z2, 1, numel(z2));
+    
+    % scale up
+    x = x*radius;
+    y = y*radius;
+    z = z*norm(axis);
+    
+    % rotate
+    axis = axis/norm(axis);
+    rotation_axis = cross([0 0 1], axis);
+    points = [x; y; z];
+    points = rotationmat3D(
+    
+    
+end

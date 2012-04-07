@@ -1,0 +1,27 @@
+%Divya Gunasekaran
+%May 7, 2011
+
+%Get xyz position of a posture given currAngles and side
+%currAngles is a vector of 7 joint angles
+%Returns row vector representing xyz position
+
+function currXYZ = GetPosturePosition(currAngles, side)
+
+if(numel(currAngles))
+    if(strcmp(side, 'right'))
+        currAnglesFull = [currAngles 0 0 0 0];
+        [rightPt leftPt rightJts leftJts] = ForwardKinematics_V4(currAnglesFull);
+        currXYZ = rightPt';
+    elseif(strcmp(side, 'left'))
+        currAnglesFull = [currAngles(1) currAngles(2) currAngles(3) 0 0 0 0 currAngles(4) ...
+                            currAngles(5) currAngles(6) currAngles(7)];
+        [rightPt leftPt rightJts leftJts] = ForwardKinematics_V4(currAnglesFull);
+        currXYZ = leftPt';
+    else
+        disp('Error: Enter right or left side');
+        currXYZ = [];
+        return;
+    end
+else
+    disp('Error: Given vector of angles is empty');
+    currXYZ = [];

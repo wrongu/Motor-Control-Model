@@ -1,0 +1,296 @@
+% Divya Gunasekaran
+% May 13, 2011
+% Class definition for a Hash Table
+
+% The dynamically sized hash table will be used to store movements. Each 
+% entry in the hash table is a doubly linked list of nodes containing the 
+% xyz coordinates of the start position and end position and the movement.
+% The absolute cell index of the starting position and absolute cell index 
+% of the final position are used as the keys.
+
+
+classdef HashTable < handle
+
+    properties
+        size            % Number of slots in hash table
+        numElems        % Number of elements in hash table
+        table           % Actual hash table
+    end
+   
+    properties (SetAccess = private)
+        weight_s %Weighting for spatial error cost
+        weight_v %Weighting for travel cost
+    end
+    
+    properties (Dependent = true, SetAccess = private)
+        loadFactor %number of elements / size
+    end
+
+
+    % Class methods
+    methods
+      %Constructor -- create an empty hash table with the given size
+      function obj = HashTable(size, weight_s, weight_v)
+          obj.size = size;
+          obj.numElems = 0;
+          table_temp(size) = struct('data', []);
+          obj.table = table_temp;
+          %Entering weights for spatial error and travel cost are optional
+          if(nargin==3)
+            obj.weight_s = weight_s;
+            obj.weight_v = weight_v;
+          %Default is to weight costs equally
+          else
+            obj.weight_s = 0.5;
+            obj.weight_v = 0.5;
+          end
+      end
+
+      %Return the load factor for the hash table
+      function load = get.loadFactor(obj)
+          if(obj.size > 0)
+              load = obj.numElems / obj.size;
+          else
+              load = NaN;
+          end
+      end
+      
+      %Return the spatial error cost 
+      function weight_s = get.weight_s(obj)
+          weight_s = obj.weight_s;
+      end
+      
+      %Return the travel cost 
+      function weight_v = get.weight_v(obj)
+          weight_v = obj.weight_v;
+      end
+      
+      %Add a new entry
+      function addEntry(obj,key,data,thresh)
+        %Hash into table
+        hashIndex = hash(key(1),key(2),obj.size);
+        
+        node = dlnode(data);
+        currNode = obj.table(hashIndex).data;
+        
+        %If there is no linked list stored at the hash entry, create
+        %one
+        if(isempty(currNode))
+            obj.table(hashIndex).data = node;
+        else
+            %Else, traverse the linked list until you get to the end or
+            %until you find a node with a "close enough" matching final
+            %position 
+            while(~isempty(currNode))
+                if(isequal(currNode.Data.key,key))
+                    diff = euclidDist(currNode.Data.final,data.final);
+                    %New node has close enough final position and better
+                    %rated movement 
+                    if(diff<=thresh && currNode.Data.score < data.score)
+                        currNode.Data = data;
+                        disp('Existing element in table updated.');
+                        return;
+                    %New node has close enough final position, but a 
+                    %worse rated movement 
+                    elseif(diff<=thresh && currNode.Data.score >= data.score)
+                        disp('Element not added; higher rated movement to similar location already exists.');
+                        return;
+                    end
+                end
+                prevNode = currNode;
+                currNode = currNode.Next;
+            end
+            %If while loop exits, we have reached end of linked list
+            %Insert the new element
+            insertAfter(node, prevNode);
+        end
+        %Increment the number of elements stored
+        obj.numElems = obj.numElems + 1;
+      end
+      
+      %Look up a stored movement by the xyz-coordinates of the intial
+      %and final positions
+      function [movement,retNode] = strictLookup(obj,key,start,final)
+        movement = [];
+        retNode = [];
+        
+        %Hash into table
+        hashIndex = hash(key(1),key(2),obj.size);
+        node = obj.table(hashIndex).data;
+        
+        %If hash entry is not empty
+        if(~isempty(node))
+            %Search through the linked list for a node with
+            %the same initial and final positions as the inputs
+            while(~isempty(node))
+                %If start and final pos match, return the movement
+                if(isequal(node.Data.init,start) && isequal(node.Data.final,final))
+                    movement = node.Data.movement;
+                    retNode = node;
+                    return;
+                else
+                    node = node.Next;
+                end
+            end
+        end
+      end
+      
+      % Look up a stored movement by the keys
+      % recall that key(1) is the 1D index of the n*n*n matrix starting cell
+      % and key(2) is the index for the final position. targetXYZ is in the
+      % cell referenced by key(2), but not necessarily the center.
+      function [movement, retNode, recalc] = fuzzyLookup(obj, key, final, thresh)
+          movement = [];
+          retNode = [];
+          recalc = false;
+          
+          % Hash into table
+          hashIndex = hash(key(1), key(2), obj.size);
+          node = obj.table(hashIndex).data;
+        
+          % Search through the linked list for a node with
+          % the same initial cell and a "close enough" final position           
+          minDiff = Inf;
+          while(~isempty(node))
+              
+              % If start and final cells match, return the movement
+              if(isequal(node.Data.key, key))
+                
+                  % distance between endpoint of stored movement and
+                  % target endpoint
+                  diff = euclidDist(node.Data.final, final);
+                  
+                  % If the Euclidean distance between the movement's final
+                  % pos. and the target pos. is less than the threshold, 
+                  % return that movement
+                  if(diff <= thresh)
+                      movement = node.Data.movement;
+                      retNode = node;
+                      return;
+                      
+                  % Otherwise, keep track of the movement whose final
+                  % pos. is closest to that of the target position and
+                  % suggest recalc to maincontroller (i.e. closest but not
+                  % close enough ==> adjust posture)
+                  elseif(diff <= minDiff)
+                      minDiff = diff;
+                      retNode = node;
+                      movement = node.Data.movement;
+                      recalc = 1;
+                  end
+              end
+              node = node.Next;
+           end
+        end
+
+      
+      %Edit a stored movement
+      function editEntry(obj,key,start,final,newMovement)
+        
+        %Retrieve the node we want to edit
+        [movement,retNode] = strictLookup(obj,key,start,final);
+        
+        %If such a node does not exist
+        if(isempty(movement) && isempty(retNode))
+            %Add a new node 
+            data.init = start;
+            data.final = final;
+            data.movement = newMovement;
+            addEntry(obj,key,data, 'start');
+        else
+            %Else, edit the retrieved node
+            retNode.Data.movement = newMovement;
+        end
+      end
+
+      %Get all entries in the HashTable obj
+      function allData = getAllEntries(obj)
+          index = 1;
+          allData{index} = []; %initialize empty cell array
+          for i=1:obj.size
+              if(~isempty(obj.table(i).data))
+                  node = obj.table(i).data;
+                  while(~isempty(node))
+                      allData{index} = node.Data;
+                      index = index + 1;
+                      node = node.Next;
+                  end
+              end
+          end
+      end
+      
+      %Extract movements 
+      %Also returns the minimum number of intermediate postures across all
+      %the returned movements
+      function [movements,minNumSteps] = getMovements(obj)
+          dataArray = getAllEntries(obj);
+          movements = cell(1,numel(dataArray));
+          minNumSteps = 1000000;
+          for i=1:numel(dataArray)
+              move = dataArray{i}.movement;
+              movements{i} = move;
+              [numSteps, ~] = size(move);
+              if(numSteps < minNumSteps)
+                  minNumSteps = numSteps;
+              end
+          end
+      end
+      
+      %Adds the given element (data) to the given table
+      %Intended for reinserting items into the second set of HashTables
+      function resizeHelper(obj,key2,data)
+          %Hash into the given table
+          hash2 = hash(obj,key2);
+          node = dlnode(data);
+          currNode = obj.table(hash2).data;
+
+          %If there is no linked list stored at the hash entry, create
+          %one
+          if(isempty(currNode))
+              obj.table(hash2).data = node;
+          else
+              %Else, traverse the linked list until you get to the end or
+              %until you find a node with a "close enough" matching final
+              %position 
+              while(~isempty(currNode))
+                  if(isequal(currNode.Data.movement,data.movement))
+                      disp('Element already exists in table');
+                      return;
+                  end
+                  prevNode = currNode;
+                  currNode = currNode.Next;
+              end
+              %If we exit the while loop, we've reached the end of the
+              %while loop and the given element is not in the table
+              insertAfter(node, prevNode);
+          end
+          obj.numElems = obj.numElems + 1;
+      end
+
+      %Resize the HashTable obj and replace it with a new HashTable
+      %Intended for the second set of hash tables
+      function newObj = resize(obj)
+          currSize = obj.size;
+          
+          %Get all entries stored in HashTable obj
+          allData = getAllEntries(obj);
+          
+          %Create new HashTable
+          newSize = currSize*2; %double table size
+          weight_s_temp = obj.weight_s;
+          weight_v_temp = obj.weight_v;
+          newObj = HashTable(newSize, weight_s_temp, weight_v_temp);
+          
+          %Rehash entries from old HashTable into new HashTable
+          for i=1:numel(allData)
+              key = allData{i}.key;
+              addEntry(newObj, key, allData{i}, 0)
+          end
+          
+          %Remove old HashTable
+          clear obj;
+      end
+           
+    end %methods end
+
+end %class def end

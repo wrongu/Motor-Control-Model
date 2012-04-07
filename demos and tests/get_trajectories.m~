@@ -1,0 +1,15 @@
+clc;
+
+robo_reset
+num_traj = 10;
+trajectories = cell(1, num_traj);
+
+for i = 1:num_traj,
+
+   user_entry = input('Press any key to start recording a movement');
+
+   [r_gripper, l_gripper, angles] = track_trajectory(5, 0.1, {'TorsoYaw'});
+
+   trajectories(i)  = {angles};
+
+end

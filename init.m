@@ -1,0 +1,33 @@
+% Richard Lange
+% July 14 2011
+
+getRootPath;
+
+dir_names = {'CircStat2011f', 'D star lite', 'demos and tests', 'drtoolbox', ...
+    'Forward Kinematics', 'HashTable', 'Inverse Kinematics', 'Levels', ...
+    'Math', 'MBPP', 'Mem and Level 1', 'PATCH_3Darray/PATCH_3Darray', ...
+    'Path Planning', 'pnet server', 'PriorityQueue', 'Saved Data', 'Servo API'};
+
+cellfun(@(x) addpath(fullfile(rootFolderPath, x)), dir_names);
+    
+fprintf('initialization of path successful\n');
+
+% % GENERATE MEXFILES
+% c_files = {'PriorityQueue/pq_createMin.cpp', ...
+%            'PriorityQueue/pq_removeMin.cpp', ...
+%            'PriorityQueue/pq_deleteMin.cpp', ...
+%            'PriorityQueue/pq_sizeMin.cpp', ...
+%            'PriorityQueue/pq_popMin.cpp', ...
+%            'PriorityQueue/pq_topMin.cpp', ...
+%            'PriorityQueue/pq_pushMin.cpp', ...
+%            'tcp_udp_ip/pnet.c'};
+% 
+% for i=1:numel(c_files)
+%     fname = c_files{i};
+%     disp(fname);
+%     eval(['mex ' fname]);
+% end
+
+clear c_files i fname dir_names
+
+refresh;

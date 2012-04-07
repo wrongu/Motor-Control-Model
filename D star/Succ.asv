@@ -1,0 +1,655 @@
+%Divya Gunasekaran
+%April 25, 2011
+%D* algorithm
+
+%Get adjacent faces for given point on the given face
+
+function [adjFaces, cellIndex] = Succ(faceIndex, point, B, n)
+
+addpath('C:\Users\Administrator\Documents\Matlab\MBPP');
+
+global FacesArray;
+
+nSq = n*n;
+nCube = n*n*n;
+
+%get center of given face
+center = FacesArray{faceIndex}.center;
+
+%Get dimensions of cells
+w = B(1).width;
+l = B(1).length;
+h = B(1).height;
+
+%Find cell that the face belongs to
+[i j k] = findCell(center, n, w, l, h);
+cellIndex = i*
+
+%Find which side (left, right, front, back, etc.) the given face is
+cellFaces = B(i,j,k).faces;
+side = find(cellFaces == faceIndex);
+side = side(1);
+
+%Initialize the adjacent cell indices, from which we will get adjacent
+%faces
+i_backTopLeft = NaN;
+i_backTopRight = NaN;
+i_backBottomLeft = NaN;
+i_backBottomRight = NaN;
+i_frontTopLeft = NaN;
+i_frontTopRight = NaN;
+i_frontBottomLeft = NaN;
+i_frontBottomRight = NaN;
+
+   
+%Determine which cell in 8-adjacent-cell arrangement based on which side
+%of the cell the given face is and where the current point on the cell is
+switch(side)
+    %Left face of cell
+    case 1
+        if(point(2) >= center(2))
+            if(point(3) < center(3))
+                adjCell = 1; %back top right
+            else
+                adjCell = 4; %back bottom right
+            end
+        else
+            if(point(3) < center(3))
+                adjCell = 5; %front top right
+            else
+                adjCell = 8; %front bottom right
+            end
+        end
+    %Right face of cell
+    case 2
+        if(point(2) >= center(2))
+            if(point(3) < center(3))
+                adjCell = 2; %back top left
+            else
+                adjCell = 3; %back bottom left
+            end
+        else
+            if(point(3) < center(3))
+                adjCell = 6; %front top left
+            else
+                adjCell = 7; %front bottom left
+            end
+        end
+    %Front face of cell
+    case 3
+        if(point(1) >= center(1))
+            if(point(3) < center(3))
+                adjCell = 2; %back top left
+            else
+                adjCell = 3; %back bottom left
+            end
+        else
+            if(point(3) < center(3))
+                adjCell = 1; %back top right
+            else
+                adjCell = 4; %back bottom right
+            end
+        end
+    %Back face of cell
+    case 4
+        if(point(1) >= center(1))
+            if(point(3) < center(3))
+                adjCell = 6; %front top left
+            else
+                adjCell = 7; %front bottom left
+            end
+        else
+            if(point(3) < center(3))
+                adjCell = 5; %front top right
+            else
+                adjCell = 8; %front bottom right
+            end
+        end
+    %Top face of cell
+    case 5
+        if(point(1) >= center(1))
+            if(point(2) < center(2))
+                adjCell = 7; %front bottom left
+            else
+                adjCell = 3; %back bottom left
+            end
+        else
+            if(point(2) < center(2))
+                adjCell = 8; %front bottom right
+            else
+                adjCell = 4; %back bottom right
+            end
+        end
+    %Bottom face
+    case 6
+        if(point(1) >= center(1))
+            if(point(2) < center(2))
+                adjCell = 6; %front top left
+            else
+                adjCell = 2; %back top left
+            end
+        else
+            if(point(2) < center(2))
+                adjCell = 5; %front top right
+            else
+                adjCell = 1; %back top right
+            end
+        end
+    otherwise
+        disp('Error: faces vector for the found cell is incorrect');
+        return;
+end
+
+%Determine indices of adjacent cells based on current cell's position in
+%8-adjacent-cell arrangement
+switch(adjCell)
+    %Current cell is Back Top Right
+    case 1
+        i_backTopRight = cellIndex;
+        
+        %If there is a cell to the left
+        if(mod(cellIndex,n)~=1)
+            i_backTopLeft = cellIndex-1;
+            %If there is a cell to the bottom left
+            if(cellIndex > nSq)
+                i_backBottomLeft = cellIndex - 1 - nSq;
+            end
+        end
+        %If there is a cell to the bottom
+        if(cellIndex > nSq)
+            i_backBottomRight = cellIndex - nSq;
+        end
+        %If there is a cell to the front
+        rem = mod(cellIndex,nSq);
+        if(rem<(nSq-n) && rem~=0)
+            i_frontTopRight = cellIndex + n;
+            %And a cell to the bottom
+            if(cellIndex > nSq)
+                i_frontBottomRight = cellIndex + n- nSq;
+            end
+            %If there is a cell to the left
+            if(mod(cellIndex,n)~=1)
+                i_frontTopLeft = cellIndex + n - 1;
+                %And a cell to the bottom
+                if(cellIndex > nSq)
+                    i_frontBottomLeft = cellIndex + n - nSq - 1;
+                end
+            end          
+        end
+          
+    %Current cell is Back Top Left
+    case 2
+        i_backTopLeft = cellIndex;
+        
+        %If there is a cell to the right
+        if(mod(cellIndex,n)~=0)
+            i_backTopRight = cellIndex+1;
+            %If there is a cell to the bottom right
+            if(cellIndex > nSq)
+                i_backBottomRight = cellIndex + 1 - nSq;
+            end
+        end
+        %If there is a cell to the bottom
+        if(cellIndex > nSq)
+            i_backBottomLeft = cellIndex - nSq;
+        end
+        %If there is a cell to the front
+        rem = mod(cellIndex,nSq);
+        if(rem<(nSq-n) && rem~=0)
+            i_frontTopLeft = cellIndex + n;
+            %And a cell to the bottom
+            if(cellIndex > nSq)
+                i_frontBottomLeft = cellIndex + n- nSq;
+            end
+            %If there is a cell to the right
+            if(mod(cellIndex,n)~=0)
+                i_frontTopRight = cellIndex + n + 1;
+                %And a cell to the bottom
+                if(cellIndex > nSq)
+                    i_frontBottomRight = cellIndex + n - nSq + 1;
+                end
+            end          
+        end
+        
+    %Current cell is Back Bottom Left
+    case 3
+        i_backBottomLeft = cellIndex;
+        
+        %If there is a cell to the right
+        if(mod(cellIndex,n)~=0)
+            i_backBottomRight = cellIndex+1;
+            %If there is a cell to the top right
+            if(cellIndex <= (nCube-nSq))
+                i_backTopRight = cellIndex + 1 + nSq;
+            end
+        end
+        %If there is a cell to the top
+        if(cellIndex <= (nCube-nSq))
+            i_backTopLeft = cellIndex + nSq;
+        end
+        %If there is a cell to the front
+        rem = mod(cellIndex,nSq);
+        if(rem<(nSq-n) && rem~=0)
+            i_frontBottomLeft = cellIndex + n;
+            %And a cell to the top
+            if(cellIndex <= (nCube-nSq))
+                i_frontTopLeft = cellIndex + n + nSq;
+            end
+            %If there is a cell to the right
+            if(mod(cellIndex,n)~=0)
+                i_frontBottomRight = cellIndex + n + 1;
+                %And a cell to the top
+                if(cellIndex <= (nCube-nSq))
+                    i_frontTopRight = cellIndex + n + nSq + 1;
+                end
+            end          
+        end
+        
+        
+    %Current cell is Back Bottom Right
+    case 4
+        i_backBottomRight = cellIndex;
+        
+        %If there is a cell to the left
+        if(mod(cellIndex,n)~=1)
+            i_backBottomLeft = cellIndex-1;
+            %If there is a cell to the top left
+            if(cellIndex <= (nCube-nSq))
+                i_backTopLeft = cellIndex - 1 + nSq;
+            end
+        end
+        %If there is a cell to the top
+        if(cellIndex <= (nCube-nSq))
+            i_backTopRight = cellIndex + nSq;
+        end
+        %If there is a cell to the front
+        rem = mod(cellIndex,nSq);
+        if(rem<(nSq-n) && rem~=0)
+            i_frontBottomRight = cellIndex + n;
+            %And a cell to the top
+            if(cellIndex <= (nCube-nSq))
+                i_frontTopRight = cellIndex + n + nSq;
+            end
+            %If there is a cell to the left
+            if(mod(cellIndex,n)~=1)
+                i_frontBottomLeft = cellIndex + n - 1;
+                %And a cell to the top
+                if(cellIndex <= (nCube-nSq))
+                    i_frontTopLeft = cellIndex + n + nSq - 1;
+                end
+            end          
+        end
+        
+    %Current cell is Front Top Right
+    case 5
+        i_frontTopRight = cellIndex;
+        
+        %If there is a cell to the left
+        if(mod(cellIndex,n)~=1)
+            i_frontTopLeft = cellIndex-1;
+            %If there is a cell to the bottom left
+            if(cellIndex > nSq)
+                i_frontBottomLeft = cellIndex - 1 - nSq;
+            end
+        end
+        %If there is a cell to the bottom
+        if(cellIndex > nSq)
+            i_frontBottomRight = cellIndex - nSq;
+        end
+        %If there is a cell to the back
+        rem = mod(cellIndex,nSq);
+        if(rem > n)
+            i_backTopRight = cellIndex - n;
+            %And a cell to the bottom
+            if(cellIndex > nSq)
+                i_backBottomRight = cellIndex - n- nSq;
+            end
+            %If there is a cell to the left
+            if(mod(cellIndex,n)~=1)
+                i_backTopLeft = cellIndex - n - 1;
+                %And a cell to the bottom
+                if(cellIndex > nSq)
+                    i_backBottomLeft = cellIndex - n - nSq - 1;
+                end
+            end          
+        end
+                    
+    %Current cell is Front Top Left
+    case 6
+        i_frontTopLeft = cellIndex;
+        
+        %If there is a cell to the right
+        if(mod(cellIndex,n)~=0)
+            i_frontTopRight = cellIndex+1;
+            %If there is a cell to the bottom right
+            if(cellIndex > nSq)
+                i_frontBottomRight = cellIndex + 1 - nSq;
+            end
+        end
+        %If there is a cell to the bottom
+        if(cellIndex > nSq)
+            i_frontBottomLeft = cellIndex - nSq;
+        end
+        %If there is a cell to the back
+        rem = mod(cellIndex,nSq);
+        if(rem > n)
+            i_backTopLeft = cellIndex - n;
+            %And a cell to the bottom
+            if(cellIndex > nSq)
+                i_backBottomLeft = cellIndex - n - nSq;
+            end
+            %If there is a cell to the right
+            if(mod(cellIndex,n)~=0)
+                i_backTopRight = cellIndex - n + 1;
+                %And a cell to the bottom
+                if(cellIndex > nSq)
+                    i_backBottomRight = cellIndex - n - nSq + 1;
+                end
+            end          
+        end
+        
+    %Current cell is Front Bottom Left
+    case 7
+        i_frontBottomLeft = cellIndex;
+        
+        %If there is a cell to the right
+        if(mod(cellIndex,n)~=0)
+            i_frontBottomRight = cellIndex+1;
+            %If there is a cell to the top right
+            if(cellIndex <= (nCube-nSq))
+                i_frontTopRight = cellIndex + 1 + nSq;
+            end
+        end
+        %If there is a cell to the top
+        if(cellIndex <= (nCube-nSq))
+            i_frontTopLeft = cellIndex + nSq;
+        end
+        %If there is a cell to the back
+        rem = mod(cellIndex,nSq);
+        if(rem > n)
+            i_backBottomLeft = cellIndex - n;
+            %And a cell to the top
+            if(cellIndex <= (nCube-nSq))
+                i_backTopLeft = cellIndex - n + nSq;
+            end
+            %If there is a cell to the right
+            if(mod(cellIndex,n)~=0)
+                i_backBottomRight = cellIndex - n + 1;
+                %And a cell to the top
+                if(cellIndex <= (nCube-nSq))
+                    i_backTopRight = cellIndex - n + nSq + 1;
+                end
+            end          
+        end 
+      
+    %Current cell is Front Bottom Right
+    case 8
+        i_frontBottomRight = cellIndex;
+        
+        %If there is a cell to the left
+        if(mod(cellIndex,n)~=1)
+            i_frontBottomLeft = cellIndex-1;
+            %If there is a cell to the top left
+            if(cellIndex <= (nCube-nSq))
+                i_frontTopLeft = cellIndex - 1 + nSq;
+            end
+        end
+        %If there is a cell to the top
+        if(cellIndex <= (nCube-nSq))
+            i_frontTopRight = cellIndex + nSq;
+        end
+        %If there is a cell to the back
+        rem = mod(cellIndex,nSq);
+        if(rem > n)
+            i_backBottomRight = cellIndex - n;
+            %And a cell to the top
+            if(cellIndex <= (nCube-nSq))
+                i_backTopRight = cellIndex - n + nSq;
+            end
+            %If there is a cell to the left
+            if(mod(cellIndex,n)~=1)
+                i_backBottomLeft = cellIndex - n - 1;
+                %And a cell to the top
+                if(cellIndex <= (nCube-nSq))
+                    i_backTopLeft = cellIndex - n + nSq - 1;
+                end
+            end          
+        end
+    otherwise
+        disp('Error: Incorrect adjacent cell marker');
+        return;
+end
+
+%Get adjacent faces
+adjFaces = [];
+if(~isnan(i_backTopLeft))
+    faces_BTL = B(i_backTopLeft).faces;
+    adjFaces = [faces_BTL(1) faces_BTL(4) faces_BTL(5)];
+end
+if(~isnan(i_backTopRight))
+    faces_BTR = B(i_backTopRight).faces;
+    adjFaces = [adjFaces faces_BTR(2) faces_BTR(4) faces_BTR(5)];
+end
+if(~isnan(i_backBottomLeft))
+    faces_BBL = B(i_backBottomLeft).faces;
+    adjFaces = [adjFaces faces_BBL(1) faces_BBL(4) faces_BBL(6)];
+end
+if(~isnan(i_backBottomRight))
+    faces_BBR = B(i_backBottomRight).faces;
+    adjFaces = [adjFaces faces_BBR(2) faces_BBR(4) faces_BBR(6)];
+end
+if(~isnan(i_frontTopLeft))
+    faces_FTL = B(i_frontTopLeft).faces;
+    adjFaces = [adjFaces faces_FTL(1) faces_FTL(3) faces_FTL(5)];
+end
+if(~isnan(i_frontTopRight))
+    faces_FTR = B(i_frontTopRight).faces;
+    adjFaces = [adjFaces faces_FTR(2) faces_FTR(3) faces_FTR(5)];
+end
+if(~isnan(i_frontBottomLeft))
+    faces_FBL = B(i_frontBottomLeft).faces;
+    adjFaces = [adjFaces faces_FBL(1) faces_FBL(3) faces_FBL(6)];
+end
+if(~isnan(i_frontBottomRight))
+    faces_FBR = B(i_frontBottomRight).faces;
+    adjFaces = [adjFaces faces_FBR(2) faces_FBR(3) faces_FBR(6)];
+end
+
+
+% %Get indices of adjacent faces based on which side the given face is on
+% switch(side)
+%     %Given face is the left face of the cell
+%     case 1
+%         adjFaces = cellFaces(2:6);
+%         if(mod(cellIndex,n)~=1)
+%             adjCellFaces = B(cellIndex-1).faces;
+%             adjFaces = [adjFaces adjCellFaces(1) adjCellFaces(3:6)];
+%         end
+%     %Given face is the right face of the cell
+%     case 2
+%         adjFaces = [cellFaces(1) cellFaces(3:6)];
+%         if(mod(cellIndex,n)~=0)
+%             adjCellFaces = B(cellIndex+1).faces;
+%             adjFaces = [adjFaces adjCellFaces(2:6)];
+%         end
+%     %Given face is the front face of the cell
+%     case 3
+%         adjFaces = [cellFaces(1:2) cellFaces(4:6)];
+%         rem = mod(cellIndex,nSq);
+%         if(rem<(nSq-n) || rem~=0)
+%             adjCellFaces = B(cellIndex+n).faces;
+%             adjFaces = [adjFaces adjCellFaces(1:3) adjCellFaces(5:6)];
+%         end
+%     %Given face is the back face of the cell
+%     case 4
+%         adjFaces = [cellFaces(1:3) cellFaces(5:6)];
+%         if(mod(cellIndex,nSq)>n)
+%             adjCellFaces = B(cellIndex-n).faces;
+%             adjFaces = [adjFaces adjCellFaces(1:2) adjCellFaces(4:6)];
+%         end
+%     %Given face is the top face of the cell
+%     case 5
+%         adjFaces = [cellFaces(1:4) cellFaces(6)];
+%         if(cellIndex <= (nCube-nSq))
+%             adjCellFaces = B(cellIndex+nSq).faces;
+%             adjFaces = [adjFaces adjCellFaces(1:5)];
+%         end
+%     %Given face is the bottom face of the cell
+%     case 6
+%         adjFaces = [cellFaces(1:5)];
+%         if(cellIndex > nSq)
+%             adjCellFaces = B(cellIndex-nSq).faces;
+%             adjFaces = [adjFaces adjCellFaces(1:4) adjCellFaces(6)];
+%         end
+%     otherwise
+%         disp('Error: Invalid face');
+%         return;
+% end
+
+% deltaX = 1;
+% deltaY = n;
+% deltaZ = n*n;
+% 
+% %TOP LEFT BACK CUBE
+% %Left face
+% node1 = nodeNum - deltaX;
+% node2 = nodeNum - deltaX + deltaZ;
+% node3 = nodeNum - deltaX - deltaY;
+% node4 = nodeNum - deltaX - deltaY + deltaZ;
+% 
+% %Back face
+% %node3
+% %node4
+% node5 = nodeNum - deltaY;
+% node6 = nodeNum - deltaY + deltaZ;
+% 
+% %Top face
+% %node2
+% %node4
+% %node6
+% node7 = nodeNum + deltaZ;
+% 
+% 
+% %TOP RIGHT BACK CUBE (aka current cube)
+% %Back face
+% %node5
+% %node6
+% node8 = nodeNum + deltaX - deltaY;
+% node9 = nodeNum + deltaX - deltaY + deltaZ;
+% 
+% %Right Face
+% %node8
+% %node9
+% node10 = nodeNum + deltaX;
+% node11 = nodeNum + deltaX + deltaZ;
+% 
+% %Top Face
+% %node6
+% %node7
+% %node9
+% %node11
+% 
+% 
+% %BOTTOM LEFT BACK CUBE
+% %Left Face
+% %node1
+% %node3
+% node12 = nodeNum - deltaX - deltaZ;
+% node13 = nodeNum - deltaX - deltaY - deltaZ;
+% 
+% %Back Face
+% %node3
+% %node5
+% %node13
+% node14 = nodeNum - deltaY - deltaZ;
+% 
+% %Bottom Face
+% %node12
+% %node13
+% %node14
+% node15 = nodeNum - deltaZ;
+% 
+% 
+% %BOTTOM RIGHT BACK CUBE
+% %Right Face
+% %node8
+% %node10
+% node16 = nodeNum + deltaX - deltaY - deltaZ;
+% node17 = nodeNum + deltaX - deltaZ;
+% 
+% %Back Face
+% %node5, node8, node14, node16
+% 
+% %Bottom Face
+% %node14, node16, node15, node17
+% 
+% 
+% %TOP LEFT FRONT CUBE
+% %Left Face
+% %node1, node2
+% node18 = nodeNum - deltaX + deltaY;
+% node19 = nodeNum - deltaX + deltaY + deltaZ;
+% 
+% %Front Face
+% %node18, node19
+% node20 = nodeNum + deltaY;
+% node21 = nodeNum + deltaY + deltaZ;
+% 
+% %Top Face
+% %node2, node7, node19, node21
+% 
+% 
+% %TOP RIGHT FRONT CUBE
+% %Right Face
+% %node10, node11
+% node22 = nodeNum + deltaX + deltaY;
+% node23 = nodeNum + deltaX + deltaY + deltaZ;
+% 
+% %Front Face
+% %node20, node21, node22, node23
+% 
+% %Top Face
+% %node7, node11, node21, node23
+% 
+% 
+% %BOTTOM LEFT FRONT CUBE
+% %Left Face
+% %node1, node12, node18
+% node24 = nodeNum - deltaX + deltaY - deltaZ;
+% 
+% %Front Face
+% %node18, node20, node24
+% node25 = nodeNum + deltaY - deltaZ;
+% 
+% %Bottom Face
+% %node12, node15, node24, node25
+% 
+% 
+% %BOTTOM RIGHT FRONT CUBE
+% %Right Face
+% %node10, node17, node22
+% node26 = nodeNum + deltaX + deltaY - deltaZ;
+% 
+% %Front Face
+% %node20, node22, node25, node26
+% 
+% %Bottom Face
+% %node15, node17, node25, node26
+
+%g = heuristic(s, node_Goal, B);
+%node_struct = (k1, k2, rhs, g)
+ 
+% function C_rhs = rhs(s, node_Goal, B)
+%  
+% if(s == node_Goal) %Generalize so that goal doesn't have to be a node!!
+%     C_rhs = 0;
+%     return;
+% else
+%     adjFaces = Succ(s, n);
+%     for i=1:numel(adjFaces)
+%         %adjFaces{i} = [node1 node2 node3 node4]
+%         face = adjFaces{i};
+%         
+%         %calculate the edge minima
+%         %using edge minima, calculate interior face minima
+%         %choose the minimum

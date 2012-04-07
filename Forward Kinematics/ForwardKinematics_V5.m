@@ -1,0 +1,104 @@
+% [rightPoint, leftPoint, rightJts, leftJts] = ForwardKinematics_V5(angles)
+%
+% Daniel Muldrew
+% October 22, 2010
+%
+% V4 to V5 by Richard Lange on August 3 2011
+% Changes: outputs 1x3 points and 7x3 joint points
+% joint points are as follows:
+% rightJts(1,:) = rightPoint = rightGripper location
+% rightJts(2,:) = RightElbow location
+% rightJts(3,:) = RightShoulderPitch location
+% etc and likewise for left side..
+%
+% Updated on August 12, 2011 by Richard Lange
+% previously rightJoints and leftJoints did not work properly. They work
+% now by essentially doing an independent F.K. calculation for each joint.
+% All transformations have now been condensed into one loop so the pattern
+% is more obvious.
+% RState and LState are no longer used; we now keep track of points only
+% not the whole coordinate system as it is transformed
+%
+% Keeping track of all points works as follows:
+% Any Kth joint's position is affected by the angles of all joints 1:K-1.
+% The F.K. algorithm works by applying joints backwards through the linkage
+% from the gripper to the base. The gripper is affected by all previous
+% joints, the elbow by all but itself, shoulder by all before it, etc. Each
+% loop iteration, we are calculating the effect of a new joint. We also
+% introduce a new point to keep track of each loop iteration on which all
+% further transformations apply. In this way we keep track of the joints
+% from the gripper down to the base in <side>Jts(1..N)
+%
+%Function  for converting angles to (x,y,z) position for left and
+%right arms
+%
+%angles is currently a vector of length 11
+%unit is radians
+%angles(1) = TorsoYaw
+%angles(2) = TorsoPitchOne
+%angles(3) = TorsoPitchTwo
+%angles(4) = RightShoulderRotator
+%angles(5) = RightShoulderPitch
+%angles(6) = RightElbow
+%angles(7) = RightWrist
+%angles(8) = LeftShoulderRotator
+%angles(9) = LeftShoulderPitch
+%angles(10) = LeftElbow
+%angles(11) = LeftWrist
+%jointPosition is a cell array that gives the position of each joint
+
+%Some angles are negated in the affine transformation. this is because we
+%want the angles in terms of counterclockwise rotations about an axis, but
+%some are given as clockwise due to servo arrangements
+
+function [rightPoint, leftPoint, rightJts, leftJts, polarRight, polarLeft] = ForwardKinematics_V5(angles)
+
+
+% Set up variables
+axes = [[0 1 0]', [0 0 1]', [0 0 1]', [0 1 0]', [0 1 0]', [0 0 1]'];
+
+torsoangle = (angles(2)-angles(3))/2;
+Rangles = [-angles(7), -angles(6), -angles(5), -angles(4), torsoangle, angles(1)];
+Langles = [+angles(11), -angles(10), -angles(9), +angles(8), torsoangle, angles(1)];
+
+Rtrans = [[0 -8.25 0]; [0 -4.125 0]; [0.5 -1 0]; [0 -4.625/2 4.3]; [0 0 2.75]; [0 0 0]];
+Ltrans = [[0 7.25 0]; [0 4.125 0]; [0.5 1 0]; [0 4.625/2 4.3]; [0 0 2.75]; [0 0 0]];
+
+rightJts = zeros(4, 7);
+leftJts = zeros(4, 7);
+new_pt = [0 0 0 1]';
+
+%##################
+%### MAIN LOOP  ###
+%##################
+for N=1:length(axes)
+    % introduce the starting point for joint N, such that all future
+    % transformations apply to it:
+    rightJts(:, N) = new_pt;
+    leftJts(:, N) = new_pt;
+    % Get the transformation matrix (4x4, combined translation and
+    % rotation)
+    Rtransform = AffineTransform(Rangles(N), axes(:, N), Rtrans(N, :));
+    Ltransform = AffineTransform(Langles(N), axes(:, N), Ltrans(N, :));
+    % apply the transformation to all points 1..N. Note that this doesn't
+    % affect points N+1..end because those are all zero still
+    rightJts = Rtransform * rightJts;
+    leftJts = Ltransform * leftJts;
+end
+
+% transpose matrices to work with other code (1 row = 1 point)
+rightJts = rightJts';
+rightJts = rightJts(:, 1:3);
+leftJts = leftJts';
+leftJts = leftJts(:, 1:3);
+
+rightPoint = rightJts(1, :);
+leftPoint = leftJts(1, :);
+
+[th, r, z] = cart2pol(rightJts(:,1), rightJts(:,2), rightJts(:,3));
+polarRight = [th r z];
+
+[th, r, z] = cart2pol(leftJts(:,1), leftJts(:,2), leftJts(:,3));
+polarLeft = [th r z];
+
+end

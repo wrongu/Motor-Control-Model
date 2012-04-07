@@ -1,0 +1,156 @@
+%Divya Gunasekaran
+%May 5, 2011
+%Compute D* algorithm
+
+function [path] = ComputePath(startPt, goalPt, B,n)
+
+addpath('C:\Users\Administrator\Documents\Matlab\PriorityQueue');
+
+inf = 1000000; %represents infinity
+
+global FacesArray;
+[B,numFaces] = ProcessFaces(B, n);
+
+%% INITIALIZATION
+path = []; %To hold order of nodes representing shortest path
+pq = pq_createMin(numFaces); %Min priority queue with a max of numFaces elem
+
+%Initialize start 
+[start,side] = GetFaceIndex(B,n,startPt);
+FacesArray{start}.point = startPt;
+
+%Initialize goal 
+[goal,side] = GetFaceIndex(B,n,goalPt);
+FacesArray{goal}.point = goalPt;
+FacesArray{goal}.rhs = 0;
+[k1,k2] = CalculateKey(goal,start);
+FacesArray{goal}.k1 = k1;
+FacesArray{goal}.k2 = k2;
+%Push goal onto priority queue
+pq_pushMin(pq,goal,FacesArray{goal}.k1,FacesArray{goal}.k2);
+
+
+%% COMPUTE PATH
+
+[faceIndex,k1_old,k2_old] = pq_topMin(pq)
+[k1_start,k2_start] = CalculateKey(start,start)
+
+m=0;%TESTING
+
+%While start node is inconsistent or there are nodes on priority queue with
+%priority less than that of the start node
+while(k1_old<k1_start || (k1_old==k1_start && k2_old<k2_start) ...
+        || FacesArray{start}.rhs~=FacesArray{start}.g)
+    
+    m=m+1
+    disp('Popping from queue:');
+    
+    [faceIndex,k1_pop,k2_pop] = pq_popMin(pq)
+    
+    disp('Actual keys of what was just popped:');
+    
+    [k1_pop,k2_pop] = CalculateKey(faceIndex,start)
+   
+    %If key of node at top of queue is not up to date
+    if(k1_old < k1_pop || (k1_old==k1_pop && k2_old<k2_pop))
+        
+        disp('Node not up to date');
+        
+        FacesArray{faceIndex}.k1 = k1_pop;
+        FacesArray{faceIndex}.k2 = k2_pop;
+        %Push node back on queue with updated key
+        pq_pushMin(pq,faceIndex,FacesArray{faceIndex}.k1,FacesArray{faceIndex}.k2);
+   
+    %Else if node at top of queue is overconsistent
+    elseif(FacesArray{faceIndex}.g > FacesArray{faceIndex}.rhs)
+        
+        disp('Overconsistent node');
+        
+        %Make node consistent
+        FacesArray{faceIndex}.g = FacesArray{faceIndex}.rhs;
+        %Get points
+        UpdateGoalFace(faceIndex,start,goal,B,n);
+        %Update all of node's neighbors and push onto queue
+        adjFaces = Succ(faceIndex, FacesArray{faceIndex}.point, B, n);
+        for i=1:numel(adjFaces)
+            adjIndex = adjFaces(i);
+            if(adjIndex~=faceIndex)
+                updated = UpdateFace(adjIndex, start, goal, B, n);
+                pq_removeMin(pq,adjIndex); %Remove if in the priority queue
+                if(updated && FacesArray{adjIndex}.g~=FacesArray{adjIndex}.rhs)
+                    str = ['Face ', num2str(adjIndex), ' pushed onto stack'];
+                    disp(str);
+                    pq_pushMin(pq,adjIndex,FacesArray{adjIndex}.k1,FacesArray{adjIndex}.k2);
+                end
+            end
+        end
+        
+    %Else node is underconsistent
+    else
+        disp('Underconsistent node');
+        
+        %Set goal cost estimate to infinity
+        FacesArray{faceIndex}.g = inf;
+        %Update node and all of node's neighbors and push onto queue
+        adjFaces = Succ(faceIndex, FacesArray{faceIndex}.point, B, n);
+        adjFaces = [faceIndex adjFaces];
+        for i=1:numel(adjFaces)
+            adjIndex = adjFaces(i);
+            updated = UpdateFace(adjIndex, start, goal, B, n);
+            pq_removeMin(pq,adjIndex); %Remove if in the priority queue
+            if(updated && FacesArray{adjIndex}.g~=FacesArray{adjIndex}.rhs)
+                str = ['Face ', num2str(adjIndex), ' pushed onto stack'];
+                pq_pushMin(pq,adjIndex,FacesArray{adjIndex}.k1,FacesArray{adjIndex}.k2);
+            end
+        end
+    end
+    
+    %Check size of queue
+    if(pq_sizeMin(pq) > 0)
+        [faceIndex,k1_old,k2_old] = pq_topMin(pq)
+        [k1_start,k2_start] = CalculateKey(start,start)
+        str=['Gstart is ', num2str(FacesArray{start}.g), ' and RHSstart is ', num2str(FacesArray{start}.rhs)];
+        disp(str);
+    end
+    
+end
+
+
+
+% %Get points for shortest path
+% numPoints = numel(path);
+% points=NaN([numPoints,3]);
+% for j=1:numPoints
+%    points(j,:) = FacesArray{path(j)}.point;
+% end
+
+numPoints=1;
+curr = start
+path=[FacesArray{curr}.point];
+while(curr~=goal && euclidDist(FacesArray{curr}.point,FacesArray{goal}.point)>0)
+    dist = euclidDist(FacesArray{curr}.point,FacesArray{goal}.point)
+    minCost = inf;
+    minNext = NaN;
+    adjFaces = Succ(curr, FacesArray{curr}.point, B, n);
+    for i=1:numel(adjFaces)
+        adjIndex = adjFaces(i);
+        if(~isnan(FacesArray{adjIndex}.point(1)))
+            cost = euclidDist(FacesArray{curr}.point,FacesArray{adjIndex}.point)...
+                + euclidDist(FacesArray{adjIndex}.point,FacesArray{goal}.point);
+        else
+            cost = inf;
+        end
+        if(cost <= minCost)
+            minCost = cost;
+            minNext = adjIndex;
+        end
+    end
+    path = [path; FacesArray{minNext}.point]
+    curr = minNext
+    numPoints = numPoints + 1
+end
+
+
+    
+    
+        

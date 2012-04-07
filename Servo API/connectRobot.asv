@@ -1,0 +1,12 @@
+%Divya Gunasekaran
+%Jan 26, 2010
+%Robot functions
+
+%Function to create a connection to robot
+
+function[sock] = connectRobot(ip, port)
+
+sock = pnet('tcpconnect', ip, port);
+
+end
+

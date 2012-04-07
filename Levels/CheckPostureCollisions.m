@@ -1,0 +1,111 @@
+%Divya Gunasekaran
+%May 6, 2011
+
+% modified by Richard Lange on 3 August 2011
+% changes:
+%   uses version 5 of Fwd Kinematics (also updated Aug 3) to get joint
+%     positions instead of specialized script
+%   uses level 3 straight line path planner to check space between points
+%     (code before was almost identical to that file)
+%   jointCoords matrix now (:,3)
+
+%Movement is an array, where each row is a posture
+%Each posture is only 7 angles
+
+function [is_valid, obstacle_locations, joint_cells] = CheckPostureCollisions(B,posture,side)
+
+%Get cell dimensions
+n = size(B,1);
+w = B(1).width;
+l = B(1).length;
+h = B(1).height;
+spacing = w;
+is_valid = 1; % successful until proven not
+
+%First check is posture is empty
+if(isempty(posture))
+    is_valid = 0;
+    return;
+end
+
+jointCoords = zeros(3,3); %will hold the xyz coord of gripper, elbow, and shoulder
+%Get the joint coordinates using forward kinematics
+% gx gy gz
+% ex ey ez
+% sx sy sz
+
+
+% ###########################
+%     CHECK FOR COLLISIONS 
+% ###########################
+
+angles = partial_posture_to_full(posture, side);
+if(strcmp(side,'right'))
+    [~, ~, joints, ~] = ForwardKinematics_V5(angles);
+elseif(strcmp(side,'left'))
+    [~, ~, ~, joints] = ForwardKinematics_V5(angles);
+else
+    disp('Error: Enter right or left side');
+    is_valid = 0;
+    return;
+end
+
+jointCoords(:,:) = joints(1:3, 1:3);
+numJoints = size(jointCoords,1);
+joint_cells = cell(1,numJoints);
+
+% Check points along each limb segment (between each joint) to see if they lie within an
+% obstacle region
+max_ind = n^3;
+obstacle_locations = [];
+flags = [get_obstacle_flag('constant'), ...
+    get_obstacle_flag('world'),  ...
+    get_obstacle_flag('random'), ...
+    get_obstacle_flag('body', 3)];
+
+% Loop over each link in the arm
+
+for i=1:numJoints-1
+    % checking space between joint(i) and joint(i+1)
+    firstJoint = jointCoords(end-i+1,:);
+    secondJoint = jointCoords(end-i,:);
+    
+    % use straight line path planner to get points in that space:
+    testPts = StraightLinePlan(B,firstJoint,secondJoint,spacing);
+    
+    celllist = [];
+    
+    % check if each point is inside an 'obstacle' cell
+    for j = 1:size(testPts,1)
+        [~,~,~,ind] = findCell(testPts(j,:),n,w,l,h);
+
+        if(ind > max_ind)
+            disp('CheckPostureCollisions:');
+            disp(testPts(j,:));
+            disp('arm out of bounds');
+            continue;
+        end
+        % check test point's cell has any flags matching the ones we're
+        % looking for (ismember)
+%         if(any(ismember(B(ind).obstacle_types, flags)))
+% %             fprintf('collision with flag %d at (%f, %f, %f):\n', ...
+% %             intersect(B(ind).obstacle_types, flags), B(ind).x, B(ind).y, B(ind).z);
+%             is_valid = 0;
+%             obstacle_locations = unique(vertcat(obstacle_locations, B(ind).center), 'rows');
+%         end
+ 
+        if(B(ind).obstacle == 1)
+            is_valid = 0;
+            obstacle_locations = unique(vertcat(obstacle_locations, B(ind).center), 'rows');
+        end
+        
+        if is_valid == 0,
+            celllist = [celllist,ind];
+        end
+    end
+    
+    joint_cells(i) = {unique(celllist)};
+    
+    % after first run, ignore body flags
+    flags = flags(1:3);
+end

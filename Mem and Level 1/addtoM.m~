@@ -1,0 +1,60 @@
+function M = addtoM(movement,type,arm.Mold)
+
+[len,~] = size(movement);
+
+dx=diff(movement);
+ndx = normr(dx);
+
+mag=[sqrt(sum(dx.^2)) 0];
+
+v1 = [dx zeros(len,1)];
+v2 = [zeros(len,1) dx];
+
+angles = acosd(sum(v1.*v2)./sqrt(sum(v1.^2).*sum(v2.^2)));
+
+cumdx = cumsum(dx);
+
+anglemag=[sqrt(sum(cumdx.^2))./(1:length(cumdx)) 0];
+
+for i = 1:len,
+
+[rightArmCoord(i,:), leftArmCoord(i,:)] = ForwardKinematics_V5(movement(i,:))
+
+end
+
+j = 1;
+
+for i = 1:len,
+    
+    if (i-1 < 1) || (i+1 > len),
+        i = [];
+    end
+    
+    M(j).type = {type};
+    M(j).currentposture = movement(i,:);
+    M(j).direction = [];
+    M(j).endpoint = rightArmCoord(end,:);
+    M(j).startpoint = rightArmCoord(1,:);
+    M(j).lastposture = movement(i-1,:);
+    M(j).nextposture = movement(i+1,:);
+    M(j).jointdifference = dx(i);
+    M(j).normjointdiff = ndx(i);
+    M(j).center = [x, y, z];
+    M(j).x = M(i).center(1);
+    M(j).y = M(i).center(2);
+    M(j).z = M(i).center(3);
+    M(j).index = i;
+    M(j).nextindex = i+1;
+    M(j).lastindex = i-1;
+    
+    j = j+1
+    
+end
+
+if length(Mold) ~= 1,
+    
+    M = [Mold, M];
+    
+end
+
+end

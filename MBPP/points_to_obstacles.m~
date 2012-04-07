@@ -1,0 +1,6 @@
+% Richard Lange
+% October 13, 2011
+%
+% given 3D points and cell space B, adds in obstacles at the given points
+
+function B = pon

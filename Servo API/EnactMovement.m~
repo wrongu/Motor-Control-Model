@@ -1,0 +1,8 @@
+numPostures = size(movement,1);
+disp('Enacting movement.')
+for i=2:numPostures
+	fprintf('\tposture %d\n', i-1);
+    EnactPosture(sock,movement(i,:),speed,side);
+    pause;
+    end
+                fprintf('\n');

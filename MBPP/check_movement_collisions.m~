@@ -1,0 +1,10 @@
+% check_movement_collisions.m
+% written by Richard Lange
+% August 31, 2011
+%
+% Given a movement and 3D space of obstacles, returns true if there is a
+% collision
+
+function collided = check_movement_collisions(B, movement, side)
+    num_postures = size(movement, 
+end

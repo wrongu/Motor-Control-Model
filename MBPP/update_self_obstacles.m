@@ -1,0 +1,53 @@
+% update_self_obstacles(B, posture)
+%
+% given the current posture and the cell-space struct B with zeroed*
+%  obstacle locations, updates "body" obstacles to correspond to the
+%  current posture
+%
+% * that is, the state of B in the "zero" position. see zero_servos.m
+%   to call this function, keep track of _both_ the original state of B and
+%   its current state, and pass the original one to this function
+%
+% written by Richard Lange
+% November 30, 2011
+
+function B = update_self_obstacles(B_orig, posture)
+    B = B_orig;
+	n = size(B,1);
+    
+    body_flag = get_obstacle_flag('body',3);
+    obs_points = [];
+    
+    for i=1:n^3
+        % pull out points in each cell that correspond to the 'body' flag
+        all_flags = B(i).obstacle_types;
+        all_locations = B(i).obstacle_locations;
+        body_flag_inds = (all_flags == body_flag);
+        locations = all_locations(body_flag_inds, :);
+        % add these points to the list of points to transform
+        obs_points = vertcat(obs_points, locations);
+        % clear these points from this cell - set to whatever other flag is in
+        % this cell
+        B(i).obstacle_types = all_flags(~body_flag_inds);
+        B(i).obstacle_locations = all_locations(~body_flag_inds,:);
+        other_flags = all_flags(~body_flag_inds);
+        B(i).obstacle = max(other_flags);
+    end
+    
+    % we now have a list of all [x y z] locations of "body" obstacles.
+    % transform these by the torso_yaw rotation (posture(1))
+    radians = posture(1);
+    % points as [x; y; z] for matrix math
+    obs_points = obs_points';
+    % get rotation matrix (around z axis)
+    RotMat = rotationmat3D(radians, [0 0 1]);
+    
+    % apply transformation
+    obs_points = RotMat*obs_points;
+    
+    % Transpose matrix back to row-point form
+    obs_points = obs_points';
+    
+    % update B with new points
+    B = points_to_obstacles(B,obs_points,body_flag);
+end

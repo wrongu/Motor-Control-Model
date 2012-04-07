@@ -1,0 +1,33 @@
+% Richard Lange
+% August 10, 2011
+
+% plot a posture in the 3D cell space along with any obstacles
+
+function fig_out = plot_posture(B, posture, side, fig_in)
+if(nargin < 4)
+    fig_out = plot_obstacles(B);
+else
+    fig_out = plot_obstacles(B, fig_in);
+end
+
+hold all;
+
+posture = partial_posture_to_full(posture,side);
+[~, ~, rjoints, ljoints] = ForwardKinematics_V5(posture);
+
+rxs = rjoints(:,1);
+rys = rjoints(:,2);
+rzs = rjoints(:,3);
+
+lxs = ljoints(:,1);
+lys = ljoints(:,2);
+lzs = ljoints(:,3);
+
+plot3(rxs, rys, rzs, 'Color', [0 0.8 0], 'marker', '+'); % right is green
+else
+    plot3(lxs, lys, lzs, 'Color', [0.8 0 0], 'marker', '+'); % left is red
+end
+
+hold off;
+
+end

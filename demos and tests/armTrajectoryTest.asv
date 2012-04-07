@@ -1,0 +1,14 @@
+XYZ = []
+
+while 1,
+    
+testangles
+
+XYZ = [jointCoords{2}(1:3,4)'; XYZ]
+pause
+
+end
+
+%%
+
+plot3(XYZ(:,1),XYZ(:,2),XYZ(:,3))

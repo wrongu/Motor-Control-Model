@@ -1,0 +1,56 @@
+%Divya Gunasekaran
+%March 10, 2011
+
+%Updates a set of postures until the difference between each the position
+%given by the posture and the target position is within a threshold phi
+
+%Inputs:
+%postureArray = array of postures
+%targetXYZ = the XYZ coordinates of the target position
+%step_size = the step-length parameter for each update
+%phi = positive real number that is the threshold for the different between
+%the XYZ coordinates of the current posture and the target position
+%side - right of left side of the robot
+
+
+function updatedPostures = AdjustPostures(postureArray, targetXYZ, step_size, phi, side)
+
+[numPostures numAngles] = size(postureArray);
+
+%Initially set updatedPostures array equal to orginal postureArray
+updatedPostures = postureArray;
+
+for i=2:numPostures
+   currPosture = postureArray(i,:);
+   
+   [currXYZ, sqDist] = AdjustPosturesHelper(currPosture, targetXYZ, side);
+    
+    while(sqDist > phi)
+        %Calculate new posture
+        
+        currentangle = [currPosture 0 0 0 0];
+        offset = 1;
+        spacing = .5;
+        
+        %NEEDS TO BE RECONFIGURED
+        [X1,X2,X3,X4,X5,X6,X7] = ndgrid((currentangle-offset):spacing:(currentangle+offset));
+
+        F = ForwardKinematics_Grad( {X1,X2,X3,X4,X5,X6,X7});
+
+        [d1F,d2F,d3F,d4F,d5F,d6F,d7F] = gradient(F,spacing);
+        
+        gradDist = [d1F,d2F,d3F,d4F,d5F,d6F,d7F];
+        normGradDist = sqrt(d1F^2 + d2F^2 + d3F^2 + d4F^2 + d5F^2 + d6F^2 + d7F^2);
+        
+        %gradDist = [2*(currXYZ(1)-targetXYZ(1)) 2*(currXYZ(2)-targetXYZ(2)) 2*(currXYZ(3)-targetXYZ(3))];
+        %normGradDist = 2*dist(currXYZ, targetXYZ);
+        newPosture = currPosture - step_size*(gradDist/normGradDist);
+        
+        [currXYZ, sqDist] = AdjustPosturesHelper(newPosture, targetXYZ, side);
+        
+    end
+
+    updatedPostures(i,:) = newPosture;
+    
+end
+  

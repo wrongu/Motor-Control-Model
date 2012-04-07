@@ -1,0 +1,25 @@
+%Divya Gunasekaran
+%Jan 28, 2010
+%Robot functions
+
+%Function to open robot gripper
+
+function[iResult] = openGripper(sock, side, speed)
+
+%Lower position limit for the left and right grip
+openPosLeft = 373;
+openPosRight = 290;
+
+%Determine whether to move Left or Right gripper
+if(stcmp(side, 'Left'))
+    iResult = moveServo(sock, 'LeftGripper', speed, openPosLeft);
+elseif(strcmp(side, 'Right'))
+    iResult = moveServo(sock, 'RightGripper', speed, openPosRight);
+else
+    disp('Error: Must specify Left or Right gripper');
+    iResult = -1;
+    return
+end
+
+        
+       

@@ -1,0 +1,40 @@
+%Divya Gunasekaran
+%May 6, 2011
+
+%Primitive straight line path planner (can only plan in straight lines)
+
+function path = StraightLinePlan(B,startPt,goalPt,spacing)
+
+addpath('C:\Users\Administrator\Documents\Matlab\tcp_udp_ip');
+
+%Length of line segment connecting start and goal points
+lineLen = euclidDist(startPt,goalPt);
+
+%Get number of points on path
+tSpacing = (spacing / lineLen);
+
+path=[];
+t=0;
+while(t<=1)
+    %Parametric equation of 3d line between start and goal points
+    intermedPt = startPt + (goalPt-startPt)*t;
+    
+    path = [path; intermedPt];
+    
+    t = t + tSpacing;
+end
+
+[numPoints,dim]=size(path);
+secondLast = path(numPoints-1,:);
+lastPt = path(numPoints,:);
+if(euclidDist(lastPt,goalPt)>0)
+    if(euclidDist(secondLast,goalPt)>spacing)
+        x = (secondLast(1)+goalPt(1))/2;
+        y = (secondLast(2)+goalPt(2))/2;
+        z = (secondLast(3)+goalPt(3))/2;
+        lastPt = [x y z];
+        path(numPoints,:) = lastPt;
+        path = [path; goalPt];
+    else
+        
+        

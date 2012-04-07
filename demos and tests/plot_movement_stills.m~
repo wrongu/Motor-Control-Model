@@ -1,0 +1,13 @@
+% Richard Lange
+% August 24 2011
+%
+% Show movement through time using Blue for first and Red for last posture
+
+function h = plot_movement_stills(B, movement, side)
+    num_postures = size(movement, 1);
+    color_order = [linspace(0,1,num_postures)' zeros(num_postures,1) linspace(1,0,num_postures)'];
+    f = figure();
+    
+    set(f, 'ColorOrder'
+    
+end

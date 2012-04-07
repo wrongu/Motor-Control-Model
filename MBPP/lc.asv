@@ -1,0 +1,46 @@
+%%Divya Gunasekaran
+%%October 14, 2010
+
+%Function to randomly generate a posture
+%NOTE: The joint angles are further limited by their dependencies on one
+%another.  This is not currently accounted for in this code. 
+
+
+%Output is a vector of length 11 with joint angles in radians
+
+function newPosture = generatePosture()
+
+%Names of arm and torso servos
+servoNames = {'TorsoYaw', 'TorsoPitchOne', 'TorsoPitchTwo', 'RightShoulderRotator', 'RightShoulderPitch',...  
+    'RightElbow', 'RightWrist', 'LeftShoulderRotator',...
+    'LeftShoulderPitch', 'LeftElbow', 'LeftWrist'};
+
+%Position limits for arm and torso servos -- [lower bound, upper bound]
+servoLimits = {[0,1022], [500,525], [500,525], [0,1022], [170,829], [151,512], [0,1022], ... 
+     [0,1022], [230, 870], [151,512], [0,1022]};
+
+% l_alpha = 0;
+% r_alpha = 360;
+% 
+% l_beta = -115;
+% r_beta = 115;
+% 
+% l_gamma = -130;
+% r_gamma = 130;
+% 
+% l_kappa = 0;
+% r_kappa = 360;
+
+zero = 512; %robot zero
+newPosture = zeros(1, length(servoNames));
+
+for i=1:length(servoNames)
+    %Compute random position within servo range
+    bounds = servoLimits{i};
+    clicks = (bounds(2) - bounds(1))*rand + bounds(1);
+    
+    %Convert position to radians
+    deg = (clicks-zero)*300/1024;  %degrees
+    rad = deg*pi/180;   %radians 
+    newPosture(i) = rad;
+end

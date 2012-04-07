@@ -1,0 +1,52 @@
+% FULL DEMO/TESTING
+
+% Before running this script, go to the parent folder and run init.m
+
+% Richard Lange
+% July 27, 2011
+
+clc;
+
+if(~exist('B','var'))
+    disp('initializing 3D cell space');
+    initMBPP;
+    % fill cell space B with 'obstacles' in space of body of robot so it
+    %  doesn't collide with itself:
+    B = fillSelfObstacles(B); 
+end
+thresh = w/2;
+
+robo_connect;
+pause(2);
+
+zero_servos(sock);
+disp('press return when the robot is in fully-zeroed position');
+pause;
+
+
+
+% Test1;
+% disp('Test 1 complete. press a key to continue');
+% pause;
+% 
+% Test1b;
+% disp('Test 1b complete. press a key to continue');
+% pause;
+% 
+% Test2;
+% disp('Test 2 complete. press a key to continue');
+% pause;
+% 
+% Test3;
+% disp('Test 2 complete. press a key to continue');
+% pause;
+% 
+% Test4;
+% disp('Test 2 complete. press a key to continue');
+% pause;
+
+zero_servos(sock);
+disp('press return when the robot is in fully-zeroed position');
+Test5;
+
+robo_disconnect;

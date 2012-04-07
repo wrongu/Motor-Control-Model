@@ -1,0 +1,1 @@
+ v = all( cellfun(@(s)any(strcmp(s,b)), a) );
