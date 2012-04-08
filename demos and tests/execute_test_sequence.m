@@ -11,6 +11,7 @@ num_tests = size(test_sequence,1);
 
 level_time_stats = zeros(8*num_tests, 3);
 level_stats_index = 1;
+level_stats_ind_trial_start = 1;
 probcond = [];
 
 Mov = [];
@@ -34,7 +35,7 @@ while test_num <= num_tests
         end
         
         curPosture = test.start_posture;
-        
+        level_stats_ind_trial_start = level_stats_index;
         MainController;
         
         %save Results4 level_time_stats test_sequence
@@ -44,14 +45,17 @@ while test_num <= num_tests
         %end
         
     catch e
-         fprintf('error occured on trial %d\n', test_num);
-         % splice out error test, add to 'failed' tests
-         % step index backwards since test ind+1 is now at ind
-         probcond = [probcond, test];
-         test_sequence = [test_sequence(1:test_ind-1); test_sequence(test_ind+1:end)];
-         test_ind = test_ind - 1;
-         fprintf('after splicing, %d tests total\n', length(test_sequence));
+        fprintf('error occured on trial %d\n', test_num);
+        % splice out error test, add to 'failed' tests
+        % step index backwards since test ind+1 is now at ind
+        probcond = [probcond; test];
+        test_sequence = [test_sequence(1:test_ind-1); test_sequence(test_ind+1:end)];
+        test_ind = test_ind - 1;
+        level_stats_index = level_stats_ind_trial_start;
+        fprintf('after splicing, %d tests total\n', length(test_sequence));
     end
     test_num = test_num + 1;
     test_ind = test_ind + 1;
 end
+
+level_time_stats = level_time_stats(1:level_stats_index+1, :);

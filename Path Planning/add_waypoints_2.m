@@ -22,7 +22,7 @@
 %                 segment := type_wp
 
 function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obstacles_COM, correction_factor)
-    if((isempty(obstacles_COM) || any(isnan(obstacles_cOM))))
+    if((isempty(obstacles_COM) || any(isnan(obstacles_COM))))
         fprintf('Must specify obstacles_COM to do waypoints');
         new_path = path;
         is_valid = 0;
