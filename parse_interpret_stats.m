@@ -1,22 +1,30 @@
 % run this script after running execute_test_sequence to get statistics and
 % useful information about the tests
 
-if(~exist('level_time_stats', 'var'))
+if(~exist('test_sequence', 'var'))
+    disp('key variable test_sequence does not exist. run generate_test_sequence first.');
+elseif(~exist('level_time_stats', 'var'))
     disp('key variable level_time_stats does not exist. run execute_test_sequence first.');
 else
     parse_stats;
     n = length(stats);
     
+    n_obs = arrayfun(@(t) length(t.obstacles), test_sequence);
+    
     total_times = zeros(n, 1);
     highest_level = zeros(n, 1);
     times_by_level = zeros(n, 5); % column c is level c-1
+    highest_level_by_n_obs = zeros(max(n_obs)+1, 5); % row i col j is 'num times max level was j-1 when # obs was i-1'
     n_lvl3_per_trial = zeros(n, 1);
     
     for i = 1:length(stats),
+        fprintf('trial %d\n', i);
         trial = stats(i);
         total_times(i) = sum(trial.times);
         highest_level(i) = max(trial.levels);
         n_lvl3_per_trial(i) = sum(trial.levels==3);
+        hlbno = highest_level_by_n_obs(length(test_sequence(i).obstacles)+1, highest_level(i)+1);
+        highest_level_by_n_obs(length(test_sequence(i).obstacles)+1, highest_level(i)+1) = hlbno + 1;
         for L = 0:4,
             times_by_level(i, L+1) = mean(trial.times(trial.levels == L));
         end
@@ -48,12 +56,25 @@ else
     
     % HISTOGRAMS
     figure();
-    subplot(1,2,1);
+    subplot(1,3,1);
     hist(highest_level, 0:4);
     title('Highest Level Reached');
-    subplot(1,2,2);
+    subplot(1,3,2);
     hist(n_lvl3_per_trial, 0:4);
     title('Number of times entered level 3 in a single trial');
+    subplot(1,3,3);
+    bar(highest_level_by_n_obs);
+    xlabel('# obstacles');
+    ylabel('# occurrences');
+    legend('max lvl 0', 'max lvl 1', 'max lvl 2', 'max lvl 3', 'max lvl 4');
+    title('max level for each trial vs. number of obstacles');
+    suptitle('Histograms for Levels');
+    
+    % SCATTER PLOTS
+    figure();
+    scatter(n_obs, total_times);
+    xlabel('num obstacles');
+    ylabel('time taken');
     
     disp('plotting done');
 end

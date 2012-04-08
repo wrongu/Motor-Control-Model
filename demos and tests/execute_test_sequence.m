@@ -15,12 +15,14 @@ probcond = [];
 
 Mov = [];
 
-for test_num = 1:num_tests
+test_num = 1;
+test_ind = 1;
+while test_num <= num_tests
     %    clc;
     try 
-        t = cputime;
-        fprintf('==================\n\tTEST %d\n==================\n\n', test_num);
-        test = test_sequence(test_num);
+        %t = cputime;
+        fprintf('=======================\n\tTEST %d of %d\n=======================\n\n', test_num, num_tests);
+        test = test_sequence(test_ind);
         B = update_self_obstacles(B_orig, test.start_posture);
         targetXYZ = test.goal_point;
         
@@ -35,18 +37,21 @@ for test_num = 1:num_tests
         
         MainController;
         
-        highestlevel(test_num) = hlevel;
+        %save Results4 level_time_stats test_sequence
         
-%        level_stats_index = level_stats_index+1;
+        %if cputime - t > 150
+        %    ghdfhfdhd
+        %end
         
-        save Results4 level_time_stats test_sequence
-        
-        if cputime - t > 150
-            ghdfhfdhd
-        end
-        
-     catch
-         probcond = [probcond, test_num];
+    catch e
          fprintf('error occured on trial %d\n', test_num);
-     end
+         % splice out error test, add to 'failed' tests
+         % step index backwards since test ind+1 is now at ind
+         probcond = [probcond, test];
+         test_sequence = [test_sequence(1:test_ind-1); test_sequence(test_ind+1:end)];
+         test_ind = test_ind - 1;
+         fprintf('after splicing, %d tests total\n', length(test_sequence));
+    end
+    test_num = test_num + 1;
+    test_ind = test_ind + 1;
 end
