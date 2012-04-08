@@ -1,28 +1,38 @@
 % Richard Lange
 % September 29, 2011
 %
-% given a path, this function returns a new path that avoids obstacles in B
-% using waypoints.
+% updated/cleaned with version control on April 8, 2012
+%
+% given a path and center-of-mass (COM) of problem/collision, this function
+%   returns a new path that goes farther around the collision point
 %
 % if obstacles_COM (center of mass) is specified as some [x y z], the 
 % segments of the given path are searched for the closest to that COM. If
 % the closest segment was some AB, a point C is added to the path (AB -->
 % ACB) such that C is on the opposite side of AB of COM (weighted by
-% 'weight')
-%
-% max_points_added is the max number of points that can be added before
-% giving up
+% 'correction_factor'). If, instead, the COM is closer to a vertex of the path than a
+% segment (rare), that vertex will be replaced with a point farther from
+% the COM
 %
 % output value 'type_wp`
 %    0         if no waypoint found
 %    negative  if replaced vertex (avoid given obst. COM), where index of 
-%                 vertex replaced = -type_wp
+%                 vertex replaced := -type_wp
 %    positive  if added to segment (where i = segment num), where index of
-%                 segment = type_wp
+%                 segment := type_wp
 
-function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obstacles_COM, weight)
+function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obstacles_COM, correction_factor)
+    if((isempty(obstacles_COM) || any(isnan(obstacles_cOM))))
+        fprintf('Must specify obstacles_COM to do waypoints');
+        new_path = path;
+        is_valid = 0;
+        waypoint_ind = 0;
+        type_wp = 0;
+        return;
+    end
+
     if(nargin < 5)
-        weight = 0.5;
+        correction_factor = 0.5;
     end
     num_segments = size(path, 1) - 1;
     
@@ -30,26 +40,23 @@ function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obs
     type_wp = 0;
     
     % keep track of closest object to COM (either pt or segment)
+    % (closest segment info)
     min_seg_dist = Inf;
-    
     closest_seg_ind = 0;
-    COM_proj_closest_seg = [];
-    
+    COM_proj_closest_seg = []; % perpendicular projection of COM to segment (closest pt on seg to COM)
+    % (closest vertex info)
     min_pt_dist = Inf;
     closest_pt_ind = 0;
     
-    
     % LOOP OVER SEGMENTS
-    i = 1;
-    while i <= num_segments
-        fprintf('add_waypoints: checking segment %d of %d\n', i, num_segments);
+    for i = 1:num_segments
+        fprintf('add_waypoints: checking vertex %d of %d and segment %d of %d\n', i, num_segments+1, i, num_segments);
         ptA = path(i, :);
         ptB = path(i+1, :);
         
         % GET CLOSEST OBJECT TO COM (segment or point)
 
         % check closet point:
-        ptA, obstacles_COM
         this_pt_dist = euclidDist(ptA, obstacles_COM);
         if(this_pt_dist < min_pt_dist)
             closest_pt_ind = i;
@@ -58,6 +65,10 @@ function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obs
 
         % Check closest segment:
         %   (normal distance from obst_COM to segment AB)
+        % Note: only counts if the projected COM to AB lies between ptA 
+        %   and ptB. (Otherwise a COM colinear with AB but far away from
+        %   both A and B would be considered 'closest' and result in a
+        %   jagged path)
 
         % unit vector from B to A
         unit_v = (ptA-ptB)/norm(ptB-ptA);
@@ -84,12 +95,9 @@ function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obs
                 min_seg_dist = dist_norm;
             end
         end
-        
-        i = i+1;
     end
     
     % USE CLOSEST-FEATURE INFO TO GENERATE NEW WAYPOINT
-    
     fprintf('closest vertex was index %d at dist %f\n', closest_pt_ind, min_pt_dist);
     fprintf('closest segment was number %d at dist %f\n', closest_seg_ind, min_seg_dist);
     % check which object was closer: a vertex or a segment
@@ -98,13 +106,13 @@ function [new_path is_valid waypoint_ind type_wp] = add_waypoints_2(B, path, obs
         % of the path (the closest vertex to obstacle_COM) with a
         % waypoint
         best_test_pt = path(closest_pt_ind,:) + ...
-            weight*(path(closest_pt_ind,:)-obstacles_COM);
+            correction_factor*(path(closest_pt_ind,:)-obstacles_COM);
         limit_test_pt = path(closest_pt_ind,:);
     else
         % to mirror point C across point D: D + (D-C). the following is the
         % same formula except weighted (scaled when reflected)
         best_test_pt = COM_proj_closest_seg + ...
-            weight*(COM_proj_closest_seg - obstacles_COM);
+            correction_factor*(COM_proj_closest_seg - obstacles_COM);
         limit_test_pt = COM_proj_closest_seg;
     end
 
