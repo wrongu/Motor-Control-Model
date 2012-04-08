@@ -22,7 +22,7 @@ while test_num <= num_tests
     %    clc;
     try 
         %t = cputime;
-        fprintf('=======================\n\tTEST %d of %d\n=======================\n\n', test_num, num_tests);
+        fprintf('=========================\n   TEST %d of %d (%d+%d)\n=========================\n\n', test_num, num_tests, length(test_sequence), length(probcond));
         test = test_sequence(test_ind);
         B = update_self_obstacles(B_orig, test.start_posture);
         targetXYZ = test.goal_point;

@@ -1,9 +1,15 @@
-function Mold = addtoM(movement,type,arm,Mold)
+function Mold = addtoM(fullmovement,type,arm,Mold,movementnum)
 
-[len,~] = size(movement);
+[len,~] = size(fullmovement);
 
-dx=diff(movement)
-ndx = normr(dx)
+for i = 1:len,
+
+   movement(i,:) = full_posture_to_partial(fullmovement(i,:),arm);
+
+end
+
+dx=diff(movement);
+ndx = normr(dx);
 
 mag=[sqrt(sum(dx.^2)) 0];
 
@@ -11,6 +17,7 @@ v1 = [dx; zeros(1,7)];
 v2 = [zeros(1,7); dx];
 
 angles = acosd(sum(v1.*v2,2)./sqrt(sum(v1.^2,2).*sum(v2.^2,2)))
+
 
 %cumdx = cumsum(dx);
 
