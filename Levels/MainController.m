@@ -373,7 +373,7 @@ while(~done)
                 is_valid = CheckMovement(B,movement,side);
                 planned = 1;
                 
-                %If movement is valid, go to Level 1 to enact it
+                %If movement is valid, go to Level 0 to enact it
                 %path
                 if(is_valid)
                     level = 0;
@@ -403,30 +403,26 @@ while(~done)
 %                 pause;
 %             % ##########
 
-toc
-
-%DEFAULT
-otherwise
-    disp('Error: Main controller entered nonexistent level');
+        %DEFAULT (also case 5) - break
+        otherwise
+            disp('Error: Main controller entered nonexistent level');
+            done = 1;
+    end
+    % record time for this loop iteration
+    tstop=toc(tstart);
+    level_time_stats(level_stats_index,3) = tstop;
+    % track highest level
+    hlevel = max(hlevel,level);
+    % increment stats index counter
     level_stats_index = level_stats_index + 1;
-    level_time_stats(level_stats_index,:) = [0 0 0];
-    done = -1;
-    return;
+    fprintf('\n\n ======= level %d completed =======\n\n', level);
+
+    if(use_robot)
+        pause;
+    end
+    close all;
+
 end
 
-tstop=toc(tstart);
-hlevel,level
-hlevel = max(hlevel,level)
-level_time_stats(level_stats_index,end) = tstop;
+% extra increment leaves blank row of zeros (which divides tests in stats matrix)
 level_stats_index = level_stats_index + 1;
-fprintf('\n\n ======= level completed =======\n\n');
-
-if(use_robot)
-    pause;
-end
-close all;
-
-end
-
-level_stats_index = level_stats_index + 1;
-level_time_stats(level_stats_index,:) = [0 0 0];

@@ -21,8 +21,10 @@ test_ind = 1;
 while test_num <= num_tests
     %    clc;
     try 
+        level_stats_ind_trial_start = level_stats_index;
         %t = cputime;
-        fprintf('=========================\n   TEST %d of %d (%d+%d)\n=========================\n\n', test_num, num_tests, length(test_sequence), length(probcond));
+        fprintf('=========================\n   TEST %d of %d (%d+%d)\n=========================\n\n', ...
+                test_num, num_tests, length(test_sequence), length(probcond));
         test = test_sequence(test_ind);
         B = update_self_obstacles(B_orig, test.start_posture);
         targetXYZ = test.goal_point;
@@ -35,7 +37,6 @@ while test_num <= num_tests
         end
         
         curPosture = test.start_posture;
-        level_stats_ind_trial_start = level_stats_index;
         MainController;
         
         %save Results4 level_time_stats test_sequence
@@ -58,4 +59,4 @@ while test_num <= num_tests
     test_ind = test_ind + 1;
 end
 
-level_time_stats = level_time_stats(1:level_stats_index+1, :);
+level_time_stats = level_time_stats(1:level_stats_index, :);
